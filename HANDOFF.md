@@ -16,19 +16,19 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `6ae39f7` - Refine settings tabs and queue/media generation behavior
+- `a5020e0` - Refine browse tab to media-library style image browser
 
 Recent commits (newest first):
-1. `6ae39f7` Refine settings tabs and queue/media generation behavior
-2. `c343f90` Refine queue tabs, dashboard parity, and active table layout
-3. `4e0f6bd` Hide stale queue failures after successful connection checks
-4. `95565c9` Update handoff paths after repo move
-5. `531be49` Fix queue layout regressions and preserve history tab on re-queue
-6. `6fd4bc6` Refresh handoff for latest settings and queue UI changes
-7. `abe6302` Polish admin UI and add history re-queue action
-8. `394320d` Refine admin motif for settings and queue pages
-9. `2ba6d6f` Improve queue alt-text display and settings/admin UI polish
-10. `4c4b5a7` Refine settings tabs, live metrics refresh, and access role UX
+1. `a5020e0` Refine browse tab to media-library style image browser
+2. `1d98acc` Add queue search tab and tune search table actions
+3. `e438bf4` Adjust History table widths and column spacing
+4. `a25bc31` Refresh handoff for latest settings and queue behavior
+5. `6ae39f7` Refine settings tabs and queue/media generation behavior
+6. `c343f90` Refine queue tabs, dashboard parity, and active table layout
+7. `4e0f6bd` Hide stale queue failures after successful connection checks
+8. `95565c9` Update handoff paths after repo move
+9. `531be49` Fix queue layout regressions and preserve history tab on re-queue
+10. `6fd4bc6` Refresh handoff for latest settings and queue UI changes
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -127,6 +127,8 @@ Queue page template: `admin/views-page-queue.php`
 - Active Queue
 - History
 - No Alt Images
+- Search
+- Browse
 
 Default queue view from left Media menu:
 - `Dashboard`
@@ -150,6 +152,17 @@ Default queue view from left Media menu:
 - Alt Text
 - Queue Status
 - Actions
+
+### Search tab behavior
+- Live AJAX search by title, filename, alt text, or attachment ID.
+- Results table shows image thumbnail, name/ID, file, alt text, queue status, last updated, actions.
+- Search actions use `Add to Queue` / `Requeue` / disabled `Queued` (state-aware) plus `View Image`.
+
+### Browse tab behavior (media-library style)
+- Grid-only image browser with media-like controls (no media-type dropdown).
+- Filters: `All dates` dropdown + `Search images` field + `Filter` button.
+- Supports paginated `Load More Images` via AJAX.
+- Clicking a thumbnail opens the attachment edit/details screen (`post.php?post=<id>&action=edit`).
 
 ### Actions and labels
 - Active row actions: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
@@ -273,7 +286,7 @@ Implemented in `includes/class-alt-generator.php`.
 - `README.md`
 
 ## 15) Known Constraints / Open Risks
-1. Queue mobile UX is improved but still table-derived HTML; semantic card markup would be a deeper refactor.
+1. Browse tab now mimics Media Library patterns but is still custom plugin UI (not WP core media grid internals).
 2. Provider remains external dependency (availability/latency risk).
 3. Queue access remains role-list based in settings model (not full capability mapping).
 4. Media modal behavior depends on WP media-frame internals and can be sensitive to admin/plugin conflicts.
@@ -299,6 +312,9 @@ Implemented in `includes/class-alt-generator.php`.
 - Dashboard metrics live refresh updates.
 - Settings tools actions redirect correctly (no access error).
 - Queue tabs and top action header render and align correctly.
+- Search tab returns expected results and queue actions for matching images.
+- Browse tab date/search filters work and `Load More Images` appends correctly.
+- Browse thumbnail click opens attachment edit/details page.
 - History row `Re-queue` action returns items to Active Queue.
 - Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views.
 
