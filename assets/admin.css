@@ -450,7 +450,7 @@
 
 .ai-alt-queue-page .ai-alt-browse-filters {
 	display: grid;
-	grid-template-columns: 180px 1fr auto;
+	grid-template-columns: 180px 180px minmax(240px, 1fr);
 	gap: 10px;
 	align-items: center;
 	padding: 12px;
@@ -464,6 +464,10 @@
 .ai-alt-queue-page .ai-alt-browse-filters input[type="search"] {
 	width: 100%;
 	max-width: none;
+}
+
+.ai-alt-queue-page .ai-alt-browse-filters input[type="search"] {
+	min-width: 0;
 }
 
 .ai-alt-queue-page .ai-alt-browse-grid.ai-alt-browse-grid-media {

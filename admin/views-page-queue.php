@@ -37,6 +37,8 @@ if ( $page_num > 1 ) {
 
 $browse_date = isset( $browse_filters['date'] ) ? sanitize_text_field( (string) $browse_filters['date'] ) : ( isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '' );
 $browse_search = isset( $browse_filters['search'] ) ? sanitize_text_field( (string) $browse_filters['search'] ) : ( isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '' );
+$browse_alt_filter = isset( $browse_filters['alt_filter'] ) ? sanitize_key( (string) $browse_filters['alt_filter'] ) : ( isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ) );
+$browse_alt_filter = in_array( $browse_alt_filter, array( 'all', 'no_alt' ), true ) ? $browse_alt_filter : 'all';
 $browse_month_options = isset( $browse_month_options ) && is_array( $browse_month_options ) ? $browse_month_options : array();
 if ( $is_search ) {
 	if ( '' !== $browse_date ) {
@@ -44,6 +46,9 @@ if ( $is_search ) {
 	}
 	if ( '' !== $browse_search ) {
 		$refresh_args['browse_search'] = $browse_search;
+	}
+	if ( 'all' !== $browse_alt_filter ) {
+		$refresh_args['browse_alt_filter'] = $browse_alt_filter;
 	}
 }
 
@@ -303,9 +308,12 @@ if ( '' !== $last_processed_at ) {
 					<?php endif; ?>
 				<?php endforeach; ?>
 			</select>
+			<select id="ai-alt-browse-alt-filter" name="browse_alt_filter" aria-label="<?php esc_attr_e( 'Filter by alt text', 'dynamic-alt-tags' ); ?>">
+				<option value="all" <?php selected( $browse_alt_filter, 'all' ); ?>><?php esc_html_e( 'All Images', 'dynamic-alt-tags' ); ?></option>
+				<option value="no_alt" <?php selected( $browse_alt_filter, 'no_alt' ); ?>><?php esc_html_e( 'No Alt Text Images', 'dynamic-alt-tags' ); ?></option>
+			</select>
 			<label class="screen-reader-text" for="ai-alt-browse-search"><?php esc_html_e( 'Search media', 'dynamic-alt-tags' ); ?></label>
 			<input type="search" id="ai-alt-browse-search" name="browse_search" value="<?php echo esc_attr( $browse_search ); ?>" placeholder="<?php echo esc_attr__( 'Search images', 'dynamic-alt-tags' ); ?>" />
-			<button type="submit" class="button"><?php esc_html_e( 'Filter', 'dynamic-alt-tags' ); ?></button>
 		</form>
 		<p class="description" id="ai-alt-browse-summary">
 			<?php

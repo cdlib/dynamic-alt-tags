@@ -835,6 +835,7 @@
 		function runBrowse(page, append) {
 			var requestId = ++requestSerial;
 			var dateFilter = form.querySelector('#ai-alt-browse-date');
+			var altFilterField = form.querySelector('#ai-alt-browse-alt-filter');
 			var searchField = form.querySelector('#ai-alt-browse-search');
 			var perPage = 24;
 			if (loadMoreButton instanceof HTMLButtonElement) {
@@ -847,6 +848,7 @@
 			body.append('page', String(page));
 			body.append('per_page', String(perPage));
 			body.append('browse_date', dateFilter instanceof HTMLSelectElement ? String(dateFilter.value || '') : '');
+			body.append('browse_alt_filter', altFilterField instanceof HTMLSelectElement ? String(altFilterField.value || 'all') : 'all');
 			body.append('browse_search', searchField instanceof HTMLInputElement ? String(searchField.value || '') : '');
 
 			if (!append) {
@@ -929,6 +931,13 @@
 		var browseDateField = form.querySelector('#ai-alt-browse-date');
 		if (browseDateField instanceof HTMLSelectElement) {
 			browseDateField.addEventListener('change', function () {
+				runBrowse(1, false);
+			});
+		}
+
+		var browseAltFilterField = form.querySelector('#ai-alt-browse-alt-filter');
+		if (browseAltFilterField instanceof HTMLSelectElement) {
+			browseAltFilterField.addEventListener('change', function () {
 				runBrowse(1, false);
 			});
 		}

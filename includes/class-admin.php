@@ -191,8 +191,9 @@ class WPAI_Alt_Text_Admin {
 			);
 		} elseif ( 'search' === $view ) {
 			$browse_filters = array(
-				'date'   => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
-				'search' => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
+				'date'       => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
+				'search'     => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
+				'alt_filter' => isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
 			);
 			$data = $this->browse_media_attachments( $browse_filters, $page, 24 );
 			$browse_month_options = $this->get_browse_month_options();
@@ -602,8 +603,9 @@ class WPAI_Alt_Text_Admin {
 		check_ajax_referer( 'ai_alt_queue_browse_ajax' );
 
 		$filters = array(
-			'date'   => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
-			'search' => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
+			'date'       => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
+			'search'     => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
+			'alt_filter' => isset( $_POST['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_POST['browse_alt_filter'] ) ) : ( isset( $_POST['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
 		);
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
 		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 60, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 24;
@@ -640,6 +642,8 @@ class WPAI_Alt_Text_Admin {
 		$offset    = ( $page - 1 ) * $per_page;
 		$date_val  = isset( $filters['date'] ) ? sanitize_text_field( (string) $filters['date'] ) : '';
 		$search    = isset( $filters['search'] ) ? sanitize_text_field( (string) $filters['search'] ) : '';
+		$alt_filter = isset( $filters['alt_filter'] ) ? sanitize_key( (string) $filters['alt_filter'] ) : 'all';
+		$alt_filter = in_array( $alt_filter, array( 'all', 'no_alt' ), true ) ? $alt_filter : 'all';
 
 		$where = array(
 			"p.post_type = 'attachment'",
@@ -660,6 +664,9 @@ class WPAI_Alt_Text_Admin {
 			$params[] = $search_like;
 			$params[] = $search_like;
 			$params[] = $search;
+		}
+		if ( 'no_alt' === $alt_filter ) {
+			$where[] = "(alt_meta.meta_value IS NULL OR TRIM(alt_meta.meta_value) = '')";
 		}
 
 		$where_sql = implode( ' AND ', $where );
