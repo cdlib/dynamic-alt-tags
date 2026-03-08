@@ -103,6 +103,19 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_search ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'search',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'Search', 'dynamic-alt-tags' ); ?></a>
 			<a class="nav-tab <?php echo $is_history ? 'nav-tab-active' : ''; ?>" href="
 			<?php
 			echo esc_url(
@@ -129,19 +142,6 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
-			<a class="nav-tab <?php echo $is_search ? 'nav-tab-active' : ''; ?>" href="
-			<?php
-			echo esc_url(
-				add_query_arg(
-					array(
-						'page' => 'ai-alt-text-queue',
-						'view' => 'search',
-					),
-					admin_url( 'upload.php' )
-				)
-			);
-			?>
-			"><?php esc_html_e( 'Search', 'dynamic-alt-tags' ); ?></a>
 		</h2>
 		<?php if ( $is_active ) : ?>
 			<div class="ai-alt-queue-process-top">
