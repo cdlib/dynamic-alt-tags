@@ -18,12 +18,12 @@ $has_more     = $page_num < $max_pages;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
 $view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
+$view         = 'browse' === $view ? 'search' : $view;
 $is_dashboard = 'dashboard' === $view;
 $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
 $is_search    = 'search' === $view;
-$is_browse    = 'browse' === $view;
-$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search && ! $is_browse;
+$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search;
 $refresh_args = array(
 	'page' => 'ai-alt-text-queue',
 	'view' => $view,
@@ -38,7 +38,7 @@ if ( $page_num > 1 ) {
 $browse_date = isset( $browse_filters['date'] ) ? sanitize_text_field( (string) $browse_filters['date'] ) : ( isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '' );
 $browse_search = isset( $browse_filters['search'] ) ? sanitize_text_field( (string) $browse_filters['search'] ) : ( isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '' );
 $browse_month_options = isset( $browse_month_options ) && is_array( $browse_month_options ) ? $browse_month_options : array();
-if ( $is_browse ) {
+if ( $is_search ) {
 	if ( '' !== $browse_date ) {
 		$refresh_args['browse_date'] = $browse_date;
 	}
@@ -129,19 +129,6 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
-			<a class="nav-tab <?php echo $is_browse ? 'nav-tab-active' : ''; ?>" href="
-			<?php
-			echo esc_url(
-				add_query_arg(
-					array(
-						'page' => 'ai-alt-text-queue',
-						'view' => 'browse',
-					),
-					admin_url( 'upload.php' )
-				)
-			);
-			?>
-			"><?php esc_html_e( 'Browse', 'dynamic-alt-tags' ); ?></a>
 			<a class="nav-tab <?php echo $is_search ? 'nav-tab-active' : ''; ?>" href="
 			<?php
 			echo esc_url(
@@ -236,9 +223,7 @@ if ( '' !== $last_processed_at ) {
 			} elseif ( $is_no_alt ) {
 				echo esc_html( sprintf( __( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total ) );
 			} elseif ( $is_search ) {
-				esc_html_e( 'Search images by title, filename, alt text, or attachment ID.', 'dynamic-alt-tags' );
-			} elseif ( $is_browse ) {
-				esc_html_e( 'Browse images using queue status and upload date filters.', 'dynamic-alt-tags' );
+				esc_html_e( 'Search images using upload date and keyword filters.', 'dynamic-alt-tags' );
 			} else {
 				echo esc_html( sprintf( __( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images ) );
 			}
@@ -304,10 +289,10 @@ if ( '' !== $last_processed_at ) {
 			</table>
 		</div>
 
-	<?php elseif ( $is_browse ) : ?>
+	<?php elseif ( $is_search ) : ?>
 		<form id="ai-alt-browse-filters" class="ai-alt-browse-filters" method="get" action="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>">
 			<input type="hidden" name="page" value="ai-alt-text-queue" />
-			<input type="hidden" name="view" value="browse" />
+			<input type="hidden" name="view" value="search" />
 			<select id="ai-alt-browse-date" name="browse_date" aria-label="<?php esc_attr_e( 'Filter by date', 'dynamic-alt-tags' ); ?>">
 				<option value=""><?php esc_html_e( 'All dates', 'dynamic-alt-tags' ); ?></option>
 				<?php foreach ( $browse_month_options as $month_option ) : ?>
@@ -339,29 +324,6 @@ if ( '' !== $last_processed_at ) {
 				<button type="button" class="button button-primary ai-alt-browse-load-more" data-next-page="<?php echo esc_attr( (string) ( $page_num + 1 ) ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'Load More Images', 'dynamic-alt-tags' ); ?></button>
 			</div>
 		<?php endif; ?>
-
-	<?php elseif ( $is_search ) : ?>
-		<div class="ai-alt-search-controls">
-			<label class="screen-reader-text" for="ai-alt-media-search-input"><?php esc_html_e( 'Search media library', 'dynamic-alt-tags' ); ?></label>
-			<input type="search" id="ai-alt-media-search-input" class="regular-text ai-alt-search-input" placeholder="<?php echo esc_attr__( 'Search by name, filename, alt text, or ID...', 'dynamic-alt-tags' ); ?>" autocomplete="off" />
-		</div>
-		<p class="description" id="ai-alt-media-search-summary"><?php esc_html_e( 'Type at least 2 characters to search.', 'dynamic-alt-tags' ); ?></p>
-		<table class="widefat striped ai-alt-table ai-alt-search-table" data-view="search">
-			<thead>
-				<tr>
-					<th><?php esc_html_e( 'Image', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Name', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'File', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Alt Text', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Queue Status', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Last Updated', 'dynamic-alt-tags' ); ?></th>
-					<th><?php esc_html_e( 'Actions', 'dynamic-alt-tags' ); ?></th>
-				</tr>
-			</thead>
-			<tbody id="ai-alt-search-results">
-				<tr><td colspan="7"><?php esc_html_e( 'No matching images found.', 'dynamic-alt-tags' ); ?></td></tr>
-			</tbody>
-		</table>
 
 	<?php else : ?>
 		<?php if ( ! $is_history && ! $is_no_alt ) : ?>

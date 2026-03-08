@@ -775,95 +775,7 @@
 			});
 	}
 
-
-	function initQueueMediaSearch() {
-		var input = document.getElementById('ai-alt-media-search-input');
-		var tbody = document.getElementById('ai-alt-search-results');
-		var summary = document.getElementById('ai-alt-media-search-summary');
-		if (!(input instanceof HTMLInputElement) || !(tbody instanceof HTMLTableSectionElement) || !(summary instanceof HTMLElement)) {
-			return;
-		}
-
-		var adminData = window.aiAltAdmin || {};
-		var i18n = adminData.i18n || {};
-		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
-		var nonce = typeof adminData.queueSearchNonce === 'string' ? adminData.queueSearchNonce : '';
-		if (!ajaxUrl || !nonce) {
-			return;
-		}
-
-		var debounceTimer = null;
-		var requestSerial = 0;
-		var minimumLength = 2;
-
-		function setPlaceholderRow(message) {
-			tbody.innerHTML = '<tr><td colspan="7">' + String(message || '') + '</td></tr>';
-		}
-
-		function searchMedia(query) {
-			requestSerial += 1;
-			var requestId = requestSerial;
-			var trimmed = String(query || '').trim();
-
-			if (trimmed.length < minimumLength) {
-				summary.textContent = i18n.searchPrompt || 'Type at least 2 characters to search.';
-				setPlaceholderRow(i18n.searchNoResults || 'No matching images found.');
-				return;
-			}
-
-			summary.textContent = i18n.searchLoading || 'Searching media library...';
-			var body = new URLSearchParams();
-			body.append('action', 'ai_alt_queue_search_ajax');
-			body.append('_ajax_nonce', nonce);
-			body.append('query', trimmed);
-
-			fetch(ajaxUrl, {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: {
-					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-				},
-				body: body.toString()
-			})
-				.then(function (response) {
-					return response.json();
-				})
-				.then(function (payload) {
-					if (requestId !== requestSerial) {
-						return;
-					}
-					if (!payload || payload.success !== true || !payload.data || typeof payload.data.html !== 'string') {
-						throw new Error(i18n.searchError || 'Unable to search media library. Please try again.');
-					}
-					tbody.innerHTML = payload.data.html;
-					var count = Number(payload.data.count || 0) || 0;
-					if (count > 0) {
-						summary.textContent = 'Found ' + count + ' result' + (count === 1 ? '' : 's') + ' for "' + trimmed + '".';
-						return;
-					}
-					summary.textContent = i18n.searchNoResults || 'No matching images found.';
-				})
-				.catch(function () {
-					if (requestId !== requestSerial) {
-						return;
-					}
-					summary.textContent = i18n.searchError || 'Unable to search media library. Please try again.';
-					setPlaceholderRow(i18n.searchNoResults || 'No matching images found.');
-				});
-		}
-
-		input.addEventListener('input', function () {
-			if (debounceTimer) {
-				window.clearTimeout(debounceTimer);
-			}
-			debounceTimer = window.setTimeout(function () {
-				searchMedia(input.value);
-			}, 280);
-		});
-	}
-
-
-		function initQueueBrowseTab() {
+	function initQueueBrowseTab() {
 		var form = document.getElementById('ai-alt-browse-filters');
 		var results = document.getElementById('ai-alt-browse-results');
 		var summary = document.getElementById('ai-alt-browse-summary');
@@ -883,7 +795,7 @@
 			return;
 		}
 
-			function updateSummary(shownCount, totalCount) {
+		function updateSummary(shownCount, totalCount) {
 			var searchField = form.querySelector('#ai-alt-browse-search');
 			var searchTerm = searchField instanceof HTMLInputElement ? String(searchField.value || '').trim() : '';
 			if (searchTerm) {
@@ -895,30 +807,30 @@
 				return;
 			}
 
-				summary.textContent = 'Showing ' + shownCount + ' of ' + totalCount + ' media items';
+			summary.textContent = 'Showing ' + shownCount + ' of ' + totalCount + ' media items';
+		}
+
+		function addBrowseReturnParam(link) {
+			if (!(link instanceof HTMLAnchorElement)) {
+				return;
 			}
 
-			function addBrowseReturnParam(link) {
-				if (!(link instanceof HTMLAnchorElement)) {
-					return;
-				}
-
-				var href = String(link.getAttribute('href') || '');
-				if (!href) {
-					return;
-				}
-
-				try {
-					var url = new URL(href, window.location.origin);
-					if (url.searchParams.has('ai_alt_return')) {
-						return;
-					}
-					url.searchParams.set('ai_alt_return', window.location.href);
-					link.setAttribute('href', url.toString());
-				} catch (e) {
-					// Ignore malformed URLs and keep default navigation behavior.
-				}
+			var href = String(link.getAttribute('href') || '');
+			if (!href) {
+				return;
 			}
+
+			try {
+				var url = new URL(href, window.location.origin);
+				if (url.searchParams.has('ai_alt_return')) {
+					return;
+				}
+				url.searchParams.set('ai_alt_return', window.location.href);
+				link.setAttribute('href', url.toString());
+			} catch (e) {
+				// Ignore malformed URLs and keep default navigation behavior.
+			}
+		}
 
 		function runBrowse(page, append) {
 			var requestId = ++requestSerial;
@@ -1021,28 +933,28 @@
 			});
 		}
 
-			if (loadMoreButton instanceof HTMLButtonElement) {
-				loadMoreButton.addEventListener('click', function (event) {
-					event.preventDefault();
-					var nextPage = Number(loadMoreButton.getAttribute('data-next-page') || '2') || 2;
-					runBrowse(nextPage, true);
-				});
-			}
-
-			results.addEventListener('click', function (event) {
-				var target = event.target;
-				if (!(target instanceof HTMLElement)) {
-					return;
-				}
-
-				var link = target.closest('a.ai-alt-browse-thumb-link');
-				if (!(link instanceof HTMLAnchorElement)) {
-					return;
-				}
-
-				addBrowseReturnParam(link);
+		if (loadMoreButton instanceof HTMLButtonElement) {
+			loadMoreButton.addEventListener('click', function (event) {
+				event.preventDefault();
+				var nextPage = Number(loadMoreButton.getAttribute('data-next-page') || '2') || 2;
+				runBrowse(nextPage, true);
 			});
 		}
+
+		results.addEventListener('click', function (event) {
+			var target = event.target;
+			if (!(target instanceof HTMLElement)) {
+				return;
+			}
+
+			var link = target.closest('a.ai-alt-browse-thumb-link');
+			if (!(link instanceof HTMLAnchorElement)) {
+				return;
+			}
+
+			addBrowseReturnParam(link);
+		});
+	}
 
 		function initMediaGridReturnToBrowse() {
 			var currentUrl;
@@ -1332,7 +1244,6 @@
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
-			initQueueMediaSearch();
 			initQueueBrowseTab();
 			initMediaGridReturnToBrowse();
 			autoSizeSuggestedAltTextareas(document);

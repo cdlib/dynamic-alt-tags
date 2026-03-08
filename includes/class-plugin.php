@@ -125,7 +125,6 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'wp_ajax_ai_alt_queue_process_ajax', array( $this->admin, 'handle_queue_process_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_load_more_ajax', array( $this->admin, 'handle_queue_load_more_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_add_no_alt_ajax', array( $this->admin, 'handle_queue_add_no_alt_ajax' ) );
-		add_action( 'wp_ajax_ai_alt_queue_search_ajax', array( $this->admin, 'handle_queue_search_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_browse_ajax', array( $this->admin, 'handle_queue_browse_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_settings_metrics_ajax', array( $this->admin, 'handle_settings_metrics_ajax' ) );
 
