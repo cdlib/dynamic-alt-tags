@@ -863,7 +863,7 @@
 	}
 
 
-	function initQueueBrowseTab() {
+		function initQueueBrowseTab() {
 		var form = document.getElementById('ai-alt-browse-filters');
 		var results = document.getElementById('ai-alt-browse-results');
 		var summary = document.getElementById('ai-alt-browse-summary');
@@ -877,15 +877,51 @@
 		var i18n = adminData.i18n || {};
 		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
 		var nonce = typeof adminData.queueBrowseNonce === 'string' ? adminData.queueBrowseNonce : '';
+		var requestSerial = 0;
+		var debounceTimer = 0;
 		if (!ajaxUrl || !nonce) {
 			return;
 		}
 
-		function updateSummary(shownCount, totalCount) {
-			summary.textContent = 'Showing ' + shownCount + ' of ' + totalCount + ' media items';
-		}
+			function updateSummary(shownCount, totalCount) {
+			var searchField = form.querySelector('#ai-alt-browse-search');
+			var searchTerm = searchField instanceof HTMLInputElement ? String(searchField.value || '').trim() : '';
+			if (searchTerm) {
+				if (totalCount > 0) {
+					summary.textContent = 'Found ' + totalCount + ' result' + (totalCount === 1 ? '' : 's') + ' for "' + searchTerm + '".';
+					return;
+				}
+				summary.textContent = i18n.browseNoResults || 'No images matched your filters.';
+				return;
+			}
+
+				summary.textContent = 'Showing ' + shownCount + ' of ' + totalCount + ' media items';
+			}
+
+			function addBrowseReturnParam(link) {
+				if (!(link instanceof HTMLAnchorElement)) {
+					return;
+				}
+
+				var href = String(link.getAttribute('href') || '');
+				if (!href) {
+					return;
+				}
+
+				try {
+					var url = new URL(href, window.location.origin);
+					if (url.searchParams.has('ai_alt_return')) {
+						return;
+					}
+					url.searchParams.set('ai_alt_return', window.location.href);
+					link.setAttribute('href', url.toString());
+				} catch (e) {
+					// Ignore malformed URLs and keep default navigation behavior.
+				}
+			}
 
 		function runBrowse(page, append) {
+			var requestId = ++requestSerial;
 			var dateFilter = form.querySelector('#ai-alt-browse-date');
 			var searchField = form.querySelector('#ai-alt-browse-search');
 			var perPage = 24;
@@ -920,6 +956,10 @@
 					return response.json();
 				})
 				.then(function (payload) {
+					if (requestId !== requestSerial) {
+						return;
+					}
+
 					if (!payload || payload.success !== true || !payload.data || typeof payload.data.html !== 'string') {
 						throw new Error(i18n.browseError || 'Unable to load browse results. Please try again.');
 					}
@@ -944,6 +984,10 @@
 					}
 				})
 				.catch(function () {
+					if (requestId !== requestSerial) {
+						return;
+					}
+
 					if (!append) {
 						results.innerHTML = '<div class="ai-alt-browse-empty">' + (i18n.browseError || 'Unable to load browse results. Please try again.') + '</div>';
 					}
@@ -958,14 +1002,108 @@
 			runBrowse(1, false);
 		});
 
-		if (loadMoreButton instanceof HTMLButtonElement) {
-			loadMoreButton.addEventListener('click', function (event) {
-				event.preventDefault();
-				var nextPage = Number(loadMoreButton.getAttribute('data-next-page') || '2') || 2;
-				runBrowse(nextPage, true);
+		var browseSearchField = form.querySelector('#ai-alt-browse-search');
+		if (browseSearchField instanceof HTMLInputElement) {
+			browseSearchField.addEventListener('input', function () {
+				if (debounceTimer) {
+					window.clearTimeout(debounceTimer);
+				}
+				debounceTimer = window.setTimeout(function () {
+					runBrowse(1, false);
+				}, 280);
 			});
 		}
-	}
+
+		var browseDateField = form.querySelector('#ai-alt-browse-date');
+		if (browseDateField instanceof HTMLSelectElement) {
+			browseDateField.addEventListener('change', function () {
+				runBrowse(1, false);
+			});
+		}
+
+			if (loadMoreButton instanceof HTMLButtonElement) {
+				loadMoreButton.addEventListener('click', function (event) {
+					event.preventDefault();
+					var nextPage = Number(loadMoreButton.getAttribute('data-next-page') || '2') || 2;
+					runBrowse(nextPage, true);
+				});
+			}
+
+			results.addEventListener('click', function (event) {
+				var target = event.target;
+				if (!(target instanceof HTMLElement)) {
+					return;
+				}
+
+				var link = target.closest('a.ai-alt-browse-thumb-link');
+				if (!(link instanceof HTMLAnchorElement)) {
+					return;
+				}
+
+				addBrowseReturnParam(link);
+			});
+		}
+
+		function initMediaGridReturnToBrowse() {
+			var currentUrl;
+			try {
+				currentUrl = new URL(window.location.href);
+			} catch (e) {
+				return;
+			}
+
+			var returnTarget = String(currentUrl.searchParams.get('ai_alt_return') || '');
+			if (!returnTarget) {
+				return;
+			}
+
+			var returnUrl;
+			try {
+				returnUrl = new URL(returnTarget, window.location.origin);
+			} catch (e) {
+				return;
+			}
+
+			if (returnUrl.origin !== window.location.origin) {
+				return;
+			}
+
+			var returnHref = returnUrl.toString();
+			var bindAttempts = 0;
+			var bindTimer = 0;
+
+			function bindCloseHandler() {
+				if (!window.wp || !window.wp.media || !window.wp.media.frames) {
+					return false;
+				}
+
+				var frame = window.wp.media.frames.edit;
+				if (!frame || typeof frame.on !== 'function') {
+					return false;
+				}
+
+				if (frame.aiAltReturnBound) {
+					return true;
+				}
+
+				frame.aiAltReturnBound = true;
+				frame.on('close', function () {
+					window.location.href = returnHref;
+				});
+				return true;
+			}
+
+			if (bindCloseHandler()) {
+				return;
+			}
+
+			bindTimer = window.setInterval(function () {
+				bindAttempts++;
+				if (bindCloseHandler() || bindAttempts > 60) {
+					window.clearInterval(bindTimer);
+				}
+			}, 150);
+		}
 
 	function addNoAltImageToQueue(trigger) {
 		var adminData = window.aiAltAdmin || {};
@@ -1196,6 +1334,7 @@
 			initSettingsMetricsRefresh();
 			initQueueMediaSearch();
 			initQueueBrowseTab();
+			initMediaGridReturnToBrowse();
 			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
 			lockedAdminRoleCheckboxes.forEach(function (checkbox) {

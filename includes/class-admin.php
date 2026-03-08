@@ -898,7 +898,12 @@ class WPAI_Alt_Text_Admin {
 			$rows[] = array(
 				'attachment_id' => $attachment_id,
 				'title'         => get_the_title( $attachment_id ),
-				'edit_url'      => get_edit_post_link( $attachment_id, '' ),
+				'edit_url'      => add_query_arg(
+					array(
+						'item' => $attachment_id,
+					),
+					admin_url( 'upload.php' )
+				),
 				'thumb_html'    => wp_get_attachment_image( $attachment_id, 'medium' ),
 			);
 		}
