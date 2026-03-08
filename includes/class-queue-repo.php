@@ -145,14 +145,15 @@ class WPAI_Alt_Text_Queue_Repo {
 		$limit = max( 1, min( 1000, absint( $limit ) ) );
 		$ids   = $wpdb->get_col(
 			$wpdb->prepare(
-				"SELECT p.ID
-				 FROM {$wpdb->posts} p
-				 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
-				 WHERE p.post_type = 'attachment'
-				 AND p.post_mime_type LIKE 'image/%'
-				 AND (pm.meta_value IS NULL OR pm.meta_value = '')
-				 ORDER BY p.ID DESC
-				 LIMIT %d",
+					"SELECT p.ID
+					 FROM {$wpdb->posts} p
+					 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
+					 WHERE p.post_type = 'attachment'
+					 AND p.post_mime_type LIKE 'image/%'
+					 AND p.post_mime_type <> 'image/svg+xml'
+					 AND (pm.meta_value IS NULL OR pm.meta_value = '')
+					 ORDER BY p.ID DESC
+					 LIMIT %d",
 				$limit
 			)
 		);
@@ -470,6 +471,30 @@ class WPAI_Alt_Text_Queue_Repo {
 
 		$row = $wpdb->get_row(
 			"SELECT id, attachment_id, status, updated_at FROM {$this->table} WHERE status IN ('queued', 'processing', 'generated', 'failed') ORDER BY updated_at DESC, id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : null;
+	}
+
+	/**
+	 * Get latest non-SVG row from active queue statuses.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	public function get_latest_active_non_svg_row() {
+		global $wpdb;
+
+		$row = $wpdb->get_row(
+			"SELECT q.id, q.attachment_id, q.status, q.updated_at
+			 FROM {$this->table} q
+			 INNER JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			 WHERE q.status IN ('queued', 'processing', 'generated', 'failed')
+			 AND p.post_type = 'attachment'
+			 AND p.post_mime_type LIKE 'image/%'
+			 AND p.post_mime_type <> 'image/svg+xml'
+			 ORDER BY q.updated_at DESC, q.id DESC
+			 LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 

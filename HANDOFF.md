@@ -12,23 +12,23 @@ Repository:
 - Plugin directory is the git root.
 
 Current git state:
-- Working tree clean after latest push.
-- `main` synced with `origin/main`.
+- Working tree has local, uncommitted SVG-skip/provider-test hardening changes.
+- Branch `main` tracking `origin/main`.
 
 Latest commit:
-- `0c15fae` - Remove No Alt Images tab from queue navigation
+- `b1b11ef` - Refresh readmes and handoff for current search workflow
 
 Recent commits (newest first):
-1. `0c15fae` Remove No Alt Images tab from queue navigation
-2. `1fbecda` Refine search filters with alt-text dropdown and layout
-3. `1e1b656` Reorder queue tabs to place Search after Active Queue
-4. `72ce221` Consolidate queue search into media-grid search tab
-5. `9b1ced9` Open browse images in attachment details and return to browse
-6. `504d29c` Refresh handoff for search and browse tab updates
-7. `a5020e0` Refine browse tab to media-library style image browser
-8. `1d98acc` Add queue search tab and tune search table actions
-9. `e438bf4` Adjust History table widths and column spacing
-10. `a25bc31` Refresh handoff for latest settings and queue behavior
+1. `b1b11ef` Refresh readmes and handoff for current search workflow
+2. `0c15fae` Remove No Alt Images tab from queue navigation
+3. `1fbecda` Refine search filters with alt-text dropdown and layout
+4. `1e1b656` Reorder queue tabs to place Search after Active Queue
+5. `72ce221` Consolidate queue search into media-grid search tab
+6. `9b1ced9` Open browse images in attachment details and return to browse
+7. `504d29c` Refresh handoff for search and browse tab updates
+8. `a5020e0` Refine browse tab to media-library style image browser
+9. `1d98acc` Add queue search tab and tune search table actions
+10. `e438bf4` Adjust History table widths and column spacing
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -241,6 +241,11 @@ Implemented in `includes/class-alt-generator.php`.
 - Direct upload mode is default/recommended
 - Provider timeout currently: 90 seconds
 - Error messaging includes more context where available
+- SVGs are treated as unsupported by the configured provider:
+  - Queue/backfill excludes SVG attachments.
+  - Processor skips SVG queue rows (marks `skipped`) without provider calls.
+  - Attachment-level generate actions return a friendly message: `SVG images are not supported by the configured provider.`
+  - Settings > Tools > Test Provider Connection now uses the latest non-SVG queued image for queued-image test, and skips queued-image check if no non-SVG candidate exists.
 
 ## 11) Cron/Scheduling Notes
 - Plugin schedules queue processing on `five_minutes` cadence.
@@ -305,6 +310,10 @@ Implemented in `includes/class-alt-generator.php`.
 - Search thumbnail click opens Attachment Details modal and returns to Search tab on close.
 - History row `Re-queue` action returns items to Active Queue.
 - Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views.
+- SVG behavior checks:
+  - SVGs are not queued from backfill or manual queue add actions.
+  - Processing skips SVG rows cleanly (no provider 502 surfaced to UI).
+  - Provider connection queued-image test does not pick SVG attachments.
 
 4. If access/apply bugs appear:
 - Start with `includes/class-settings.php` access methods.

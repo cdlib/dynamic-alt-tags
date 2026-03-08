@@ -514,8 +514,12 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		$attachment = get_post( $attachment_id );
-		if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image( $attachment_id ) ) {
+		$mime_type  = (string) get_post_mime_type( $attachment_id );
+		if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || 0 !== strpos( $mime_type, 'image/' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only image attachments can be queued.', 'dynamic-alt-tags' ) ), 400 );
+		}
+		if ( $this->is_svg_attachment( $attachment_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ) ), 400 );
 		}
 		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ) ), 403 );
@@ -985,9 +989,9 @@ class WPAI_Alt_Text_Admin {
 			$messages[] = __( 'Baseline test succeeded.', 'dynamic-alt-tags' );
 		}
 
-		$row = $this->queue_repo->get_latest_active_row();
+		$row = $this->queue_repo->get_latest_active_non_svg_row();
 		if ( ! is_array( $row ) || empty( $row['attachment_id'] ) ) {
-			$messages[] = __( 'Latest queued image test skipped: no active queue item found.', 'dynamic-alt-tags' );
+			$messages[] = __( 'Latest queued image test skipped: no non-SVG active queue item found.', 'dynamic-alt-tags' );
 		} else {
 			$attachment_id = absint( $row['attachment_id'] );
 			$image_url     = wp_get_attachment_url( $attachment_id );
@@ -1005,15 +1009,24 @@ class WPAI_Alt_Text_Admin {
 					)
 				);
 
-				if ( is_wp_error( $latest_result ) ) {
-					$status     = 'error';
-					$messages[] = sprintf(
-						/* translators: 1: attachment id, 2: error message */
-						__( 'Latest queued image test failed (attachment #%1$d): %2$s', 'dynamic-alt-tags' ),
-						$attachment_id,
-						$latest_result->get_error_message()
-					);
-				} elseif ( ! is_array( $latest_result ) || empty( $latest_result['caption'] ) ) {
+					if ( is_wp_error( $latest_result ) ) {
+						if ( 'ai_alt_svg_not_supported' === $latest_result->get_error_code() ) {
+							$messages[] = sprintf(
+								/* translators: 1: attachment id, 2: error message */
+								__( 'Latest queued image test skipped (attachment #%1$d): %2$s', 'dynamic-alt-tags' ),
+								$attachment_id,
+								$latest_result->get_error_message()
+							);
+						} else {
+							$status     = 'error';
+							$messages[] = sprintf(
+								/* translators: 1: attachment id, 2: error message */
+								__( 'Latest queued image test failed (attachment #%1$d): %2$s', 'dynamic-alt-tags' ),
+								$attachment_id,
+								$latest_result->get_error_message()
+							);
+						}
+					} elseif ( ! is_array( $latest_result ) || empty( $latest_result['caption'] ) ) {
 					$status     = 'error';
 					$messages[] = sprintf(
 						/* translators: %d attachment id */
@@ -1404,5 +1417,20 @@ class WPAI_Alt_Text_Admin {
 	 */
 	private function current_user_can_view_queue() {
 		return $this->settings->current_user_can_access_queue();
+	}
+
+	/**
+	 * Determine whether an attachment is SVG.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function is_svg_attachment( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		return 'image/svg+xml' === (string) get_post_mime_type( $attachment_id );
 	}
 }

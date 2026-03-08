@@ -89,11 +89,15 @@ class WPAI_Alt_Text_Processor {
 				continue;
 			}
 
-			if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
-				$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
-				$this->record_processing_metric( false, $started_at );
-				continue;
-			}
+				if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
+					$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+					$this->record_processing_metric( false, $started_at );
+					continue;
+				}
+				if ( $this->is_svg_attachment( $attachment_id ) ) {
+					$this->queue_repo->mark_final( $row_id, 'skipped', '' );
+					continue;
+				}
 
 			$existing_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 			if ( ! $overwrite && is_string( $existing_alt ) && '' !== trim( $existing_alt ) ) {
@@ -181,11 +185,15 @@ class WPAI_Alt_Text_Processor {
 			return false;
 		}
 
-		if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
-			$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
-			$this->record_processing_metric( false, $started_at );
-			return false;
-		}
+			if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
+				$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
+				$this->record_processing_metric( false, $started_at );
+				return false;
+			}
+			if ( $this->is_svg_attachment( $attachment_id ) ) {
+				$this->queue_repo->mark_final( $row_id, 'skipped', '' );
+				return false;
+			}
 
 		$status = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
 		if ( ! in_array( $status, array( 'queued', 'failed' ), true ) ) {
@@ -294,6 +302,26 @@ class WPAI_Alt_Text_Processor {
 		}
 
 		return current_user_can( 'edit_post', $attachment_id );
+	}
+
+	/**
+	 * Whether an attachment is SVG.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function is_svg_attachment( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		$mime_type = get_post_mime_type( $attachment_id );
+		if ( ! is_string( $mime_type ) ) {
+			return false;
+		}
+
+		return 'image/svg+xml' === strtolower( trim( $mime_type ) );
 	}
 
 	/**

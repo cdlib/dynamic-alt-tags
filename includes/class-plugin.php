@@ -206,6 +206,9 @@ class WPAI_Alt_Text_Plugin {
 		if ( 0 !== strpos( (string) get_post_mime_type( $attachment_id ), 'image/' ) ) {
 			return;
 		}
+		if ( $this->is_svg_attachment( $attachment_id ) ) {
+			return;
+		}
 
 		$existing_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
 		$options      = $this->settings->get_options();
@@ -268,6 +271,9 @@ class WPAI_Alt_Text_Plugin {
 		}
 
 		if ( 0 !== strpos( (string) get_post_mime_type( $attachment_id ), 'image/' ) ) {
+			return $form_fields;
+		}
+		if ( $this->is_svg_attachment( $attachment_id ) ) {
 			return $form_fields;
 		}
 
@@ -487,12 +493,18 @@ class WPAI_Alt_Text_Plugin {
 			);
 		}
 
-		if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
-			return array(
-				'ok'      => false,
-				'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ),
-			);
-		}
+			if ( ! current_user_can( 'edit_post', $attachment_id ) ) {
+				return array(
+					'ok'      => false,
+					'message' => __( 'You do not have permission to edit this attachment.', 'dynamic-alt-tags' ),
+				);
+			}
+			if ( $this->is_svg_attachment( $attachment_id ) ) {
+				return array(
+					'ok'      => false,
+					'message' => __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ),
+				);
+			}
 
 		if ( 'generate' === $action ) {
 			$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
@@ -697,9 +709,29 @@ class WPAI_Alt_Text_Plugin {
 
 		delete_user_meta( get_current_user_id(), '_ai_alt_upload_review_notice' );
 		?>
-		<div class="notice notice-success is-dismissible">
-			<p><?php echo esc_html( $notice ); ?></p>
-		</div>
-		<?php
+			<div class="notice notice-success is-dismissible">
+				<p><?php echo esc_html( $notice ); ?></p>
+			</div>
+			<?php
+		}
+
+	/**
+	 * Whether an attachment is SVG.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function is_svg_attachment( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		$mime_type = get_post_mime_type( $attachment_id );
+		if ( ! is_string( $mime_type ) ) {
+			return false;
+		}
+
+		return 'image/svg+xml' === strtolower( trim( $mime_type ) );
 	}
 }

@@ -42,6 +42,7 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		$options    = $this->settings->get_options();
 		$worker_url = isset( $options['worker_url'] ) ? trim( (string) $options['worker_url'] ) : '';
 		$token      = isset( $options['cloudflare_token'] ) ? trim( (string) $options['cloudflare_token'] ) : '';
+		$attachment_id = isset( $context['attachment_id'] ) ? absint( $context['attachment_id'] ) : 0;
 		$use_url_mode = ! empty( $options['use_url_mode'] );
 		if ( ! array_key_exists( 'use_url_mode', $options ) && array_key_exists( 'direct_upload_mode', $options ) ) {
 			$use_url_mode = empty( $options['direct_upload_mode'] );
@@ -50,6 +51,9 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 
 		if ( '' === $worker_url ) {
 			return new WP_Error( 'ai_alt_missing_worker_url', __( 'Cloudflare Worker URL is not configured.', 'dynamic-alt-tags' ) );
+		}
+		if ( $this->is_svg_attachment( $attachment_id ) || $this->is_svg_url( $image_url ) ) {
+			return new WP_Error( 'ai_alt_svg_not_supported', __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ) );
 		}
 
 		$headers = array(
@@ -254,6 +258,9 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		}
 
 		$mime_type = get_post_mime_type( $attachment_id );
+		if ( is_string( $mime_type ) && 'image/svg+xml' === strtolower( trim( $mime_type ) ) ) {
+			return new WP_Error( 'ai_alt_svg_not_supported', __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ) );
+		}
 		if ( ! is_string( $mime_type ) || 0 !== strpos( $mime_type, 'image/' ) ) {
 			$mime_type = 'application/octet-stream';
 		}
@@ -264,5 +271,45 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			'image_mime_type'   => sanitize_text_field( $mime_type ),
 			'image_filename'    => sanitize_file_name( basename( $file_path ) ),
 		);
+	}
+
+	/**
+	 * Whether an attachment is SVG.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @return bool
+	 */
+	private function is_svg_attachment( $attachment_id ) {
+		$attachment_id = absint( $attachment_id );
+		if ( ! $attachment_id ) {
+			return false;
+		}
+
+		$mime_type = get_post_mime_type( $attachment_id );
+		if ( ! is_string( $mime_type ) ) {
+			return false;
+		}
+
+		return 'image/svg+xml' === strtolower( trim( $mime_type ) );
+	}
+
+	/**
+	 * Whether an image URL likely points to an SVG.
+	 *
+	 * @param string $image_url Image URL.
+	 * @return bool
+	 */
+	private function is_svg_url( $image_url ) {
+		$image_url = trim( (string) $image_url );
+		if ( '' === $image_url ) {
+			return false;
+		}
+
+		$path = (string) wp_parse_url( $image_url, PHP_URL_PATH );
+		if ( '' === $path ) {
+			return false;
+		}
+
+		return (bool) preg_match( '/\.svg$/i', $path );
 	}
 }
