@@ -134,19 +134,6 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
-			<a class="nav-tab <?php echo $is_no_alt ? 'nav-tab-active' : ''; ?>" href="
-			<?php
-			echo esc_url(
-				add_query_arg(
-					array(
-						'page' => 'ai-alt-text-queue',
-						'view' => 'no_alt',
-					),
-					admin_url( 'upload.php' )
-				)
-			);
-			?>
-			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
 		</h2>
 		<?php if ( $is_active ) : ?>
 			<div class="ai-alt-queue-process-top">
