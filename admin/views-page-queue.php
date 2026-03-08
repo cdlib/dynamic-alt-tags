@@ -300,7 +300,10 @@ if ( '' !== $last_processed_at ) {
 				<option value="no_alt" <?php selected( $browse_alt_filter, 'no_alt' ); ?>><?php esc_html_e( 'No Alt Text Images', 'dynamic-alt-tags' ); ?></option>
 			</select>
 			<label class="screen-reader-text" for="ai-alt-browse-search"><?php esc_html_e( 'Search media', 'dynamic-alt-tags' ); ?></label>
-			<input type="search" id="ai-alt-browse-search" name="browse_search" value="<?php echo esc_attr( $browse_search ); ?>" placeholder="<?php echo esc_attr__( 'Search images', 'dynamic-alt-tags' ); ?>" />
+			<div class="ai-alt-browse-search-wrap">
+				<input type="search" id="ai-alt-browse-search" name="browse_search" value="<?php echo esc_attr( $browse_search ); ?>" placeholder="<?php echo esc_attr__( 'Search images', 'dynamic-alt-tags' ); ?>" />
+				<button type="button" class="ai-alt-browse-search-clear" aria-label="<?php esc_attr_e( 'Clear search', 'dynamic-alt-tags' ); ?>" <?php echo '' === $browse_search ? 'hidden' : ''; ?>>X</button>
+			</div>
 		</form>
 		<p class="description" id="ai-alt-browse-summary">
 			<?php

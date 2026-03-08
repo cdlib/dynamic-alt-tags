@@ -911,6 +911,17 @@
 				});
 		}
 
+		function updateBrowseSearchClearVisibility() {
+			if (!(browseSearchField instanceof HTMLInputElement)) {
+				return;
+			}
+			var clearButton = form.querySelector('.ai-alt-browse-search-clear');
+			if (!(clearButton instanceof HTMLButtonElement)) {
+				return;
+			}
+			clearButton.hidden = String(browseSearchField.value || '').trim() === '';
+		}
+
 		form.addEventListener('submit', function (event) {
 			event.preventDefault();
 			runBrowse(1, false);
@@ -919,6 +930,7 @@
 		var browseSearchField = form.querySelector('#ai-alt-browse-search');
 		if (browseSearchField instanceof HTMLInputElement) {
 			browseSearchField.addEventListener('input', function () {
+				updateBrowseSearchClearVisibility();
 				if (debounceTimer) {
 					window.clearTimeout(debounceTimer);
 				}
@@ -926,6 +938,18 @@
 					runBrowse(1, false);
 				}, 280);
 			});
+
+			updateBrowseSearchClearVisibility();
+
+			var browseSearchClear = form.querySelector('.ai-alt-browse-search-clear');
+			if (browseSearchClear instanceof HTMLButtonElement) {
+				browseSearchClear.addEventListener('click', function () {
+					browseSearchField.value = '';
+					updateBrowseSearchClearVisibility();
+					runBrowse(1, false);
+					browseSearchField.focus();
+				});
+			}
 		}
 
 		var browseDateField = form.querySelector('#ai-alt-browse-date');
