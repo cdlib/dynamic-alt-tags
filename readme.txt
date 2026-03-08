@@ -68,15 +68,20 @@ Row actions:
 * `Skip Image`: moves item to History without applying
 * `View Image`: opens source image in a new tab
 
+==== Search ====
+Grid-style media browser for finding/filtering attachments.
+
+Filters:
+* `All dates`
+* `All Images` or `No Alt Text Images`
+* `Search images` (live/debounced)
+
+Behavior:
+* `Load More Images` appends additional results.
+* Clicking a thumbnail opens WordPress Attachment Details (media modal) and returns to the plugin Search tab when the modal closes.
+
 ==== History ====
 Shows finalized items (`approved`, `rejected`, `skipped`) with confidence, final alt text, and processed timestamp.
-
-==== No Alt Images ====
-Lists images currently missing alt text.
-
-Actions:
-* `Add to Queue` or `Requeue`
-* `View Image`
 
 === Attachment Details Workflow ===
 In Media Attachment Details, use `Generate Alt Text` for direct generation.
@@ -128,9 +133,6 @@ Behavior:
 * Use a conservative `Batch Size` during rollout.
 * Review History regularly for quality.
 * Grant queue access only to users who manage media metadata.
-
-=== Additional Documentation ===
-For a fuller operational guide, see `USER-GUIDE.md` in this plugin directory.
 
 == Changelog ==
 = 0.1.0 =

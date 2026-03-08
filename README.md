@@ -43,11 +43,17 @@ Go to **Media > Dynamic Alt Tags**.
 - **Skip Image**: move item to History
 - **View Image**: open source image
 
+#### Search
+- Grid-style media browser for searching/filtering images
+- Filters:
+  - **All dates** dropdown
+  - **All Images / No Alt Text Images** dropdown
+  - **Search images** input (live/debounced)
+- **Load More Images** appends additional results
+- Clicking a thumbnail opens WordPress **Attachment Details** (media modal) and returns to the plugin Search tab when the modal closes
+
 #### History
 Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and processed timestamp.
-
-#### No Alt Images
-Lists images with empty alt text and lets you queue/requeue quickly.
 
 ### Attachment Details Workflow
 - No queue row: image is queued and processed

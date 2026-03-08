@@ -16,19 +16,19 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `a5020e0` - Refine browse tab to media-library style image browser
+- `0c15fae` - Remove No Alt Images tab from queue navigation
 
 Recent commits (newest first):
-1. `a5020e0` Refine browse tab to media-library style image browser
-2. `1d98acc` Add queue search tab and tune search table actions
-3. `e438bf4` Adjust History table widths and column spacing
-4. `a25bc31` Refresh handoff for latest settings and queue behavior
-5. `6ae39f7` Refine settings tabs and queue/media generation behavior
-6. `c343f90` Refine queue tabs, dashboard parity, and active table layout
-7. `4e0f6bd` Hide stale queue failures after successful connection checks
-8. `95565c9` Update handoff paths after repo move
-9. `531be49` Fix queue layout regressions and preserve history tab on re-queue
-10. `6fd4bc6` Refresh handoff for latest settings and queue UI changes
+1. `0c15fae` Remove No Alt Images tab from queue navigation
+2. `1fbecda` Refine search filters with alt-text dropdown and layout
+3. `1e1b656` Reorder queue tabs to place Search after Active Queue
+4. `72ce221` Consolidate queue search into media-grid search tab
+5. `9b1ced9` Open browse images in attachment details and return to browse
+6. `504d29c` Refresh handoff for search and browse tab updates
+7. `a5020e0` Refine browse tab to media-library style image browser
+8. `1d98acc` Add queue search tab and tune search table actions
+9. `e438bf4` Adjust History table widths and column spacing
+10. `a25bc31` Refresh handoff for latest settings and queue behavior
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -125,10 +125,8 @@ Queue page template: `admin/views-page-queue.php`
 ### Views/Tabs
 - Dashboard
 - Active Queue
-- History
-- No Alt Images
 - Search
-- Browse
+- History
 
 Default queue view from left Media menu:
 - `Dashboard`
@@ -147,22 +145,13 @@ Default queue view from left Media menu:
 - Processed On (uses WP General Settings date/time format)
 - Actions
 
-### No Alt Images columns
-- Image
-- Alt Text
-- Queue Status
-- Actions
-
 ### Search tab behavior
-- Live AJAX search by title, filename, alt text, or attachment ID.
-- Results table shows image thumbnail, name/ID, file, alt text, queue status, last updated, actions.
-- Search actions use `Add to Queue` / `Requeue` / disabled `Queued` (state-aware) plus `View Image`.
-
-### Browse tab behavior (media-library style)
-- Grid-only image browser with media-like controls (no media-type dropdown).
-- Filters: `All dates` dropdown + `Search images` field + `Filter` button.
+- Grid-only media-style image browser.
+- Filters: `All dates` dropdown + `All Images / No Alt Text Images` dropdown + `Search images` field.
+- Search input is live/debounced; dropdown changes auto-refresh results.
 - Supports paginated `Load More Images` via AJAX.
-- Clicking a thumbnail opens the attachment edit/details screen (`post.php?post=<id>&action=edit`).
+- Clicking a thumbnail opens WordPress Attachment Details (media modal).
+- Closing the modal returns to the plugin Search tab with current filters.
 
 ### Actions and labels
 - Active row actions: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
@@ -192,7 +181,7 @@ Queue Dashboard behavior:
 - `Refresh` uses clean queue URL args (page/view/status/paged) to avoid stale alerts.
 
 ### Thumbnail behavior
-- Thumbnails are clickable and open image URL in a new tab.
+- Search-grid thumbnails open Attachment Details (media modal).
 
 ### Responsiveness
 - Mobile/tablet (`max-width: 782px`) responsive overrides in `assets/admin.css`.
@@ -286,7 +275,7 @@ Implemented in `includes/class-alt-generator.php`.
 - `README.md`
 
 ## 15) Known Constraints / Open Risks
-1. Browse tab now mimics Media Library patterns but is still custom plugin UI (not WP core media grid internals).
+1. Search tab uses a custom media-style grid (not WP core media grid internals).
 2. Provider remains external dependency (availability/latency risk).
 3. Queue access remains role-list based in settings model (not full capability mapping).
 4. Media modal behavior depends on WP media-frame internals and can be sensitive to admin/plugin conflicts.
@@ -312,9 +301,8 @@ Implemented in `includes/class-alt-generator.php`.
 - Dashboard metrics live refresh updates.
 - Settings tools actions redirect correctly (no access error).
 - Queue tabs and top action header render and align correctly.
-- Search tab returns expected results and queue actions for matching images.
-- Browse tab date/search filters work and `Load More Images` appends correctly.
-- Browse thumbnail click opens attachment edit/details page.
+- Search tab date/alt-filter/search controls update results correctly and `Load More Images` appends correctly.
+- Search thumbnail click opens Attachment Details modal and returns to Search tab on close.
 - History row `Re-queue` action returns items to Active Queue.
 - Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views.
 
