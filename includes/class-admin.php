@@ -119,6 +119,7 @@ class WPAI_Alt_Text_Admin {
 				'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 				'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
 				'queueSearchNonce' => wp_create_nonce( 'ai_alt_queue_search_ajax' ),
+				'queueBrowseNonce' => wp_create_nonce( 'ai_alt_queue_browse_ajax' ),
 				'settingsMetricsNonce' => wp_create_nonce( 'ai_alt_settings_metrics_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
 				'syncTitleFromAlt'   => ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ),
@@ -136,6 +137,9 @@ class WPAI_Alt_Text_Admin {
 					'searchError'        => __( 'Unable to search media library. Please try again.', 'dynamic-alt-tags' ),
 					'searchPrompt'       => __( 'Type at least 2 characters to search.', 'dynamic-alt-tags' ),
 					'searchNoResults'    => __( 'No matching images found.', 'dynamic-alt-tags' ),
+					'browseLoading'     => __( 'Loading images...', 'dynamic-alt-tags' ),
+					'browseError'       => __( 'Unable to load browse results. Please try again.', 'dynamic-alt-tags' ),
+					'browseNoResults'   => __( 'No images matched your filters.', 'dynamic-alt-tags' ),
 					'queueAddSuccess'    => __( 'Added to queue', 'dynamic-alt-tags' ),
 					'queueAddError'      => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
@@ -177,7 +181,7 @@ class WPAI_Alt_Text_Admin {
 
 		$status       = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'dashboard';
-		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $view : 'dashboard';
+		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
 		$page         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$per_page     = 20;
 		if ( 'dashboard' === $view || 'search' === $view ) {
@@ -187,6 +191,13 @@ class WPAI_Alt_Text_Admin {
 				'per_page' => $per_page,
 				'rows'     => array(),
 			);
+		} elseif ( 'browse' === $view ) {
+			$browse_filters = array(
+				'date'   => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
+				'search' => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
+			);
+			$data = $this->browse_media_attachments( $browse_filters, $page, 24 );
+			$browse_month_options = $this->get_browse_month_options();
 		} else {
 			$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
 		}
@@ -745,6 +756,197 @@ class WPAI_Alt_Text_Admin {
 		return (string) ob_get_clean();
 	}
 
+
+	/**
+	 * Get month options for media-style browse dropdown.
+	 *
+	 * @return array<int,array<string,string>>
+	 */
+	private function get_browse_month_options() {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			"SELECT DISTINCT YEAR(post_date) AS y, MONTH(post_date) AS m
+			 FROM {$wpdb->posts}
+			 WHERE post_type = 'attachment'
+			 AND post_mime_type LIKE 'image/%'
+			 AND post_status = 'inherit'
+			 ORDER BY post_date DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		$options = array();
+		foreach ( (array) $rows as $row ) {
+			$year  = isset( $row['y'] ) ? absint( $row['y'] ) : 0;
+			$month = isset( $row['m'] ) ? absint( $row['m'] ) : 0;
+			if ( $year < 1 || $month < 1 || $month > 12 ) {
+				continue;
+			}
+			$value = sprintf( '%04d%02d', $year, $month );
+			$label = date_i18n( 'F Y', mktime( 0, 0, 0, $month, 1, $year ) );
+			$options[] = array(
+				'value' => $value,
+				'label' => $label,
+			);
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Browse media attachments with filters.
+	 *
+	 * @return void
+	 */
+	public function handle_queue_browse_ajax() {
+		if ( ! $this->current_user_can_view_queue() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) ), 403 );
+		}
+
+		check_ajax_referer( 'ai_alt_queue_browse_ajax' );
+
+		$filters = array(
+			'date'   => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
+			'search' => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
+		);
+		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
+		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 60, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 24;
+
+		$data = $this->browse_media_attachments( $filters, $page, $per_page );
+		$rows = isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : array();
+
+		wp_send_json_success(
+			array(
+				'html'      => $this->render_browse_cards_html( $rows ),
+				'total'     => isset( $data['total'] ) ? absint( $data['total'] ) : 0,
+				'count'     => count( $rows ),
+				'page'      => isset( $data['page'] ) ? absint( $data['page'] ) : $page,
+				'per_page'  => isset( $data['per_page'] ) ? absint( $data['per_page'] ) : $per_page,
+				'has_more'  => isset( $data['has_more'] ) ? (bool) $data['has_more'] : false,
+				'next_page' => isset( $data['next_page'] ) ? absint( $data['next_page'] ) : ( $page + 1 ),
+			)
+		);
+	}
+
+	/**
+	 * Browse media attachments with date and search filters.
+	 *
+	 * @param array<string,string> $filters Browse filters.
+	 * @param int                  $page Page number.
+	 * @param int                  $per_page Results per page.
+	 * @return array<string,mixed>
+	 */
+	private function browse_media_attachments( $filters, $page = 1, $per_page = 24 ) {
+		global $wpdb;
+
+		$page      = max( 1, absint( $page ) );
+		$per_page  = max( 1, min( 60, absint( $per_page ) ) );
+		$offset    = ( $page - 1 ) * $per_page;
+		$date_val  = isset( $filters['date'] ) ? sanitize_text_field( (string) $filters['date'] ) : '';
+		$search    = isset( $filters['search'] ) ? sanitize_text_field( (string) $filters['search'] ) : '';
+
+		$where = array(
+			"p.post_type = 'attachment'",
+			"p.post_mime_type LIKE 'image/%'",
+			"p.post_status = 'inherit'",
+		);
+		$params = array();
+
+		if ( preg_match( '/^\d{6}$/', $date_val ) ) {
+			$where[]  = "DATE_FORMAT(p.post_date, '%Y%m') = %s";
+			$params[] = $date_val;
+		}
+
+		if ( '' !== $search ) {
+			$search_like = '%' . $wpdb->esc_like( $search ) . '%';
+			$where[] = '(p.post_title LIKE %s OR file_meta.meta_value LIKE %s OR alt_meta.meta_value LIKE %s OR CAST(p.ID AS CHAR) = %s)';
+			$params[] = $search_like;
+			$params[] = $search_like;
+			$params[] = $search_like;
+			$params[] = $search;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+		$count_sql = "SELECT COUNT(DISTINCT p.ID)
+			FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
+			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
+			WHERE {$where_sql}";
+		$rows_sql  = "SELECT DISTINCT p.ID AS attachment_id, p.post_date
+			FROM {$wpdb->posts} p
+			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
+			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
+			WHERE {$where_sql}
+			ORDER BY p.post_date DESC
+			LIMIT %d OFFSET %d";
+
+		if ( empty( $params ) ) {
+			$total = (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$rows_raw = $wpdb->get_results( $wpdb->prepare( $rows_sql, $per_page, $offset ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		} else {
+			$total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			$rows_raw = $wpdb->get_results( $wpdb->prepare( $rows_sql, array_merge( $params, array( $per_page, $offset ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		}
+
+		$rows = array();
+		foreach ( (array) $rows_raw as $row ) {
+			$attachment_id = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
+			if ( ! $attachment_id || ! current_user_can( 'edit_post', $attachment_id ) ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'attachment_id' => $attachment_id,
+				'title'         => get_the_title( $attachment_id ),
+				'edit_url'      => get_edit_post_link( $attachment_id, '' ),
+				'thumb_html'    => wp_get_attachment_image( $attachment_id, 'medium' ),
+			);
+		}
+
+		$max_page = max( 1, (int) ceil( $total / $per_page ) );
+
+		return array(
+			'total'     => $total,
+			'page'      => $page,
+			'per_page'  => $per_page,
+			'rows'      => $rows,
+			'has_more'  => $page < $max_page,
+			'next_page' => $page + 1,
+		);
+	}
+
+	/**
+	 * Render browse cards for media attachments.
+	 *
+	 * @param array<int,array<string,mixed>> $rows Rows.
+	 * @return string
+	 */
+	private function render_browse_cards_html( $rows ) {
+		if ( empty( $rows ) ) {
+			return '<div class="ai-alt-browse-empty">' . esc_html__( 'No images matched your filters.', 'dynamic-alt-tags' ) . '</div>';
+		}
+
+		ob_start();
+		foreach ( $rows as $row ) {
+			$attachment_id = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
+			$title         = isset( $row['title'] ) ? sanitize_text_field( (string) $row['title'] ) : '';
+			$edit_url      = isset( $row['edit_url'] ) ? esc_url_raw( (string) $row['edit_url'] ) : '';
+			$thumb_html    = isset( $row['thumb_html'] ) ? (string) $row['thumb_html'] : '';
+			?>
+			<article class="ai-alt-browse-card">
+				<a class="ai-alt-browse-thumb-link" href="<?php echo esc_url( $edit_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Open attachment details for %s', 'dynamic-alt-tags' ), '' !== $title ? $title : '#' . $attachment_id ) ); ?>">
+					<?php if ( '' !== $thumb_html ) : ?>
+						<?php echo wp_kses_post( $thumb_html ); ?>
+					<?php else : ?>
+						<span class="ai-alt-browse-thumb-fallback"><?php esc_html_e( 'No image', 'dynamic-alt-tags' ); ?></span>
+					<?php endif; ?>
+				</a>
+			</article>
+			<?php
+		}
+		return (string) ob_get_clean();
+	}
+
 	/**
 	 * Render active/history queue rows.
 	 *
@@ -1151,7 +1353,7 @@ class WPAI_Alt_Text_Admin {
 		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
 		$return_view     = isset( $_POST['return_view'] ) ? sanitize_key( wp_unslash( $_POST['return_view'] ) ) : '';
-		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $return_view : '';
+		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $return_view : '';
 
 		$single_action = isset( $_POST['single_action'] ) ? sanitize_text_field( wp_unslash( $_POST['single_action'] ) ) : '';
 		if ( '' !== $single_action ) {

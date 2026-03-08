@@ -17,12 +17,13 @@ $max_pages    = max( 1, (int) ceil( $total / $per_page ) );
 $has_more     = $page_num < $max_pages;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
-$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search' ), true ) ? $view : 'dashboard';
+$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
 $is_dashboard = 'dashboard' === $view;
 $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
 $is_search    = 'search' === $view;
-$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search;
+$is_browse    = 'browse' === $view;
+$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search && ! $is_browse;
 $refresh_args = array(
 	'page' => 'ai-alt-text-queue',
 	'view' => $view,
@@ -32,6 +33,18 @@ if ( '' !== $status ) {
 }
 if ( $page_num > 1 ) {
 	$refresh_args['paged'] = $page_num;
+}
+
+$browse_date = isset( $browse_filters['date'] ) ? sanitize_text_field( (string) $browse_filters['date'] ) : ( isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '' );
+$browse_search = isset( $browse_filters['search'] ) ? sanitize_text_field( (string) $browse_filters['search'] ) : ( isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '' );
+$browse_month_options = isset( $browse_month_options ) && is_array( $browse_month_options ) ? $browse_month_options : array();
+if ( $is_browse ) {
+	if ( '' !== $browse_date ) {
+		$refresh_args['browse_date'] = $browse_date;
+	}
+	if ( '' !== $browse_search ) {
+		$refresh_args['browse_search'] = $browse_search;
+	}
 }
 
 $metrics = isset( $metrics ) && is_array( $metrics ) ? $metrics : array();
@@ -116,6 +129,19 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'No Alt Images', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_browse ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'browse',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'Browse', 'dynamic-alt-tags' ); ?></a>
 			<a class="nav-tab <?php echo $is_search ? 'nav-tab-active' : ''; ?>" href="
 			<?php
 			echo esc_url(
@@ -211,6 +237,8 @@ if ( '' !== $last_processed_at ) {
 				echo esc_html( sprintf( __( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total ) );
 			} elseif ( $is_search ) {
 				esc_html_e( 'Search images by title, filename, alt text, or attachment ID.', 'dynamic-alt-tags' );
+			} elseif ( $is_browse ) {
+				esc_html_e( 'Browse images using queue status and upload date filters.', 'dynamic-alt-tags' );
 			} else {
 				echo esc_html( sprintf( __( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images ) );
 			}
@@ -275,6 +303,42 @@ if ( '' !== $last_processed_at ) {
 				</tbody>
 			</table>
 		</div>
+
+	<?php elseif ( $is_browse ) : ?>
+		<form id="ai-alt-browse-filters" class="ai-alt-browse-filters" method="get" action="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>">
+			<input type="hidden" name="page" value="ai-alt-text-queue" />
+			<input type="hidden" name="view" value="browse" />
+			<select id="ai-alt-browse-date" name="browse_date" aria-label="<?php esc_attr_e( 'Filter by date', 'dynamic-alt-tags' ); ?>">
+				<option value=""><?php esc_html_e( 'All dates', 'dynamic-alt-tags' ); ?></option>
+				<?php foreach ( $browse_month_options as $month_option ) : ?>
+					<?php $month_value = isset( $month_option['value'] ) ? sanitize_text_field( (string) $month_option['value'] ) : ''; ?>
+					<?php $month_label = isset( $month_option['label'] ) ? sanitize_text_field( (string) $month_option['label'] ) : ''; ?>
+					<?php if ( '' !== $month_value && '' !== $month_label ) : ?>
+						<option value="<?php echo esc_attr( $month_value ); ?>" <?php selected( $browse_date, $month_value ); ?>><?php echo esc_html( $month_label ); ?></option>
+					<?php endif; ?>
+				<?php endforeach; ?>
+			</select>
+			<label class="screen-reader-text" for="ai-alt-browse-search"><?php esc_html_e( 'Search media', 'dynamic-alt-tags' ); ?></label>
+			<input type="search" id="ai-alt-browse-search" name="browse_search" value="<?php echo esc_attr( $browse_search ); ?>" placeholder="<?php echo esc_attr__( 'Search images', 'dynamic-alt-tags' ); ?>" />
+			<button type="submit" class="button"><?php esc_html_e( 'Filter', 'dynamic-alt-tags' ); ?></button>
+		</form>
+		<p class="description" id="ai-alt-browse-summary">
+			<?php
+			echo esc_html(
+				sprintf(
+					__( 'Showing %1$d of %2$d media items', 'dynamic-alt-tags' ),
+					absint( count( $rows ) ),
+					absint( $total )
+				)
+			);
+			?>
+		</p>
+		<div id="ai-alt-browse-results" class="ai-alt-browse-grid ai-alt-browse-grid-media"><?php echo $this->render_browse_cards_html( $rows ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+		<?php if ( $has_more ) : ?>
+			<div class="tablenav ai-alt-load-more-wrap" id="ai-alt-browse-load-more-wrap">
+				<button type="button" class="button button-primary ai-alt-browse-load-more" data-next-page="<?php echo esc_attr( (string) ( $page_num + 1 ) ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'Load More Images', 'dynamic-alt-tags' ); ?></button>
+			</div>
+		<?php endif; ?>
 
 	<?php elseif ( $is_search ) : ?>
 		<div class="ai-alt-search-controls">

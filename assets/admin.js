@@ -862,6 +862,111 @@
 		});
 	}
 
+
+	function initQueueBrowseTab() {
+		var form = document.getElementById('ai-alt-browse-filters');
+		var results = document.getElementById('ai-alt-browse-results');
+		var summary = document.getElementById('ai-alt-browse-summary');
+		var loadMoreButton = document.querySelector('.ai-alt-browse-load-more');
+		var loadMoreWrap = document.getElementById('ai-alt-browse-load-more-wrap');
+		if (!(form instanceof HTMLFormElement) || !(results instanceof HTMLElement) || !(summary instanceof HTMLElement)) {
+			return;
+		}
+
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.queueBrowseNonce === 'string' ? adminData.queueBrowseNonce : '';
+		if (!ajaxUrl || !nonce) {
+			return;
+		}
+
+		function updateSummary(shownCount, totalCount) {
+			summary.textContent = 'Showing ' + shownCount + ' of ' + totalCount + ' media items';
+		}
+
+		function runBrowse(page, append) {
+			var dateFilter = form.querySelector('#ai-alt-browse-date');
+			var searchField = form.querySelector('#ai-alt-browse-search');
+			var perPage = 24;
+			if (loadMoreButton instanceof HTMLButtonElement) {
+				perPage = Number(loadMoreButton.getAttribute('data-per-page') || '24') || 24;
+			}
+
+			var body = new URLSearchParams();
+			body.append('action', 'ai_alt_queue_browse_ajax');
+			body.append('_ajax_nonce', nonce);
+			body.append('page', String(page));
+			body.append('per_page', String(perPage));
+			body.append('browse_date', dateFilter instanceof HTMLSelectElement ? String(dateFilter.value || '') : '');
+			body.append('browse_search', searchField instanceof HTMLInputElement ? String(searchField.value || '') : '');
+
+			if (!append) {
+				results.innerHTML = '<div class="ai-alt-browse-empty">' + (i18n.browseLoading || 'Loading images...') + '</div>';
+			}
+			if (loadMoreButton instanceof HTMLButtonElement) {
+				loadMoreButton.disabled = true;
+			}
+
+			fetch(ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+				},
+				body: body.toString()
+			})
+				.then(function (response) {
+					return response.json();
+				})
+				.then(function (payload) {
+					if (!payload || payload.success !== true || !payload.data || typeof payload.data.html !== 'string') {
+						throw new Error(i18n.browseError || 'Unable to load browse results. Please try again.');
+					}
+
+					if (append) {
+						results.insertAdjacentHTML('beforeend', payload.data.html);
+					} else {
+						results.innerHTML = payload.data.html;
+					}
+
+					var cards = results.querySelectorAll('.ai-alt-browse-card').length;
+					updateSummary(cards, Number(payload.data.total || 0) || 0);
+
+					if (loadMoreButton instanceof HTMLButtonElement && loadMoreWrap instanceof HTMLElement) {
+						if (payload.data.has_more) {
+							loadMoreButton.disabled = false;
+							loadMoreButton.setAttribute('data-next-page', String(payload.data.next_page || (page + 1)));
+							loadMoreWrap.style.display = '';
+						} else {
+							loadMoreWrap.style.display = 'none';
+						}
+					}
+				})
+				.catch(function () {
+					if (!append) {
+						results.innerHTML = '<div class="ai-alt-browse-empty">' + (i18n.browseError || 'Unable to load browse results. Please try again.') + '</div>';
+					}
+					if (loadMoreButton instanceof HTMLButtonElement) {
+						loadMoreButton.disabled = false;
+					}
+				});
+		}
+
+		form.addEventListener('submit', function (event) {
+			event.preventDefault();
+			runBrowse(1, false);
+		});
+
+		if (loadMoreButton instanceof HTMLButtonElement) {
+			loadMoreButton.addEventListener('click', function (event) {
+				event.preventDefault();
+				var nextPage = Number(loadMoreButton.getAttribute('data-next-page') || '2') || 2;
+				runBrowse(nextPage, true);
+			});
+		}
+	}
+
 	function addNoAltImageToQueue(trigger) {
 		var adminData = window.aiAltAdmin || {};
 		var i18n = adminData.i18n || {};
@@ -1090,6 +1195,7 @@
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
 			initQueueMediaSearch();
+			initQueueBrowseTab();
 			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
 			lockedAdminRoleCheckboxes.forEach(function (checkbox) {
