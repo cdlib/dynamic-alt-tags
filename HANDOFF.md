@@ -4,7 +4,7 @@
 Dynamic Alt Tags is a WordPress plugin that generates image alt text through a Cloudflare Worker, supports queue/history review workflows, and allows per-image generation from Media Attachment Details.
 
 Plugin path:
-- `/Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags`
+- `/Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags`
 
 Repository:
 - `https://github.com/ericsatzman/dynamic-alt-tags.git`
@@ -12,23 +12,23 @@ Repository:
 - Plugin directory is the git root.
 
 Current git state:
-- Working tree has local, uncommitted SVG-skip/provider-test hardening changes.
-- Branch `main` tracking `origin/main`.
+- Working tree clean after latest push.
+- `main` synced with `origin/main`.
 
 Latest commit:
-- `b1b11ef` - Refresh readmes and handoff for current search workflow
+- `7e3fea4` - Harden admin access controls and improve WCAG admin UI support
 
 Recent commits (newest first):
-1. `b1b11ef` Refresh readmes and handoff for current search workflow
-2. `0c15fae` Remove No Alt Images tab from queue navigation
-3. `1fbecda` Refine search filters with alt-text dropdown and layout
-4. `1e1b656` Reorder queue tabs to place Search after Active Queue
-5. `72ce221` Consolidate queue search into media-grid search tab
-6. `9b1ced9` Open browse images in attachment details and return to browse
-7. `504d29c` Refresh handoff for search and browse tab updates
-8. `a5020e0` Refine browse tab to media-library style image browser
-9. `1d98acc` Add queue search tab and tune search table actions
-10. `e438bf4` Adjust History table widths and column spacing
+1. `7e3fea4` Harden admin access controls and improve WCAG admin UI support
+2. `d37a9f4` Exclude SVG attachments from plugin views and queue metrics
+3. `d9baf40` Add clear button for queue search input
+4. `9b95791` Harden SVG queue handling and provider connection checks
+5. `b1b11ef` Refresh readmes and handoff for current search workflow
+6. `0c15fae` Remove No Alt Images tab from queue navigation
+7. `1fbecda` Refine search filters with alt-text dropdown and layout
+8. `1e1b656` Reorder queue tabs to place Search after Active Queue
+9. `72ce221` Consolidate queue search into media-grid search tab
+10. `9b1ced9` Open browse images in attachment details and return to browse
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -46,14 +46,17 @@ Access split by page type:
 
 ### Settings page access
 - Administrator only.
+- Menu capability now explicitly requires `manage_options`.
 
 ### Queue page access (Media > Dynamic Alt Tags)
 - Administrator always has access.
 - Additional roles can be granted queue access via Access tab role checkboxes.
+- Queue menu capability now uses dedicated plugin capability `ai_alt_manage_queue`, dynamically mapped via role settings.
 
 ### Additional permission hardening
 - Queue/media actions enforce per-attachment capability checks (`edit_post`) before modifying attachment metadata/title.
 - Attachment upload-action AJAX validates capability + nonce.
+- Upload-action debug logs are now metadata-only; alt text/custom text fields are explicitly redacted.
 
 ### Where this is enforced
 - Menu visibility and admin-post/wp-ajax handlers: `includes/class-admin.php`
@@ -149,6 +152,7 @@ Default queue view from left Media menu:
 - Grid-only media-style image browser.
 - Filters: `All dates` dropdown + `All Images / No Alt Text Images` dropdown + `Search images` field.
 - Search input is live/debounced; dropdown changes auto-refresh results.
+- Search input includes an inline clear (`X`) button.
 - Supports paginated `Load More Images` via AJAX.
 - Clicking a thumbnail opens WordPress Attachment Details (media modal).
 - Closing the modal returns to the plugin Search tab with current filters.
@@ -185,7 +189,13 @@ Queue Dashboard behavior:
 
 ### Responsiveness
 - Mobile/tablet (`max-width: 782px`) responsive overrides in `assets/admin.css`.
-- Queue rows render stacked on smaller screens.
+- Queue tables preserve table header/cell relationships on smaller screens and use horizontal scroll instead of stacked card conversion.
+
+### Accessibility updates (WCAG 2.2 AA-focused)
+- Search summary now uses status semantics (`role="status"`, `aria-live="polite"`, `aria-atomic="true"`).
+- Search clear button target size increased to 24x24.
+- Search clear button now has explicit visible focus styling.
+- Mobile table semantics updated to preserve info/relationships in responsive mode.
 
 ## 6) Admin UI Motif (New)
 ### Settings motif
@@ -257,7 +267,7 @@ Implemented in `includes/class-alt-generator.php`.
 
 ### Local checks
 - PHPCS:
-  - `composer -d /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
+  - `composer -d /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
 ## 13) Documentation Status
 - Primary WordPress readme: `readme.txt`
@@ -282,7 +292,7 @@ Implemented in `includes/class-alt-generator.php`.
 ## 15) Known Constraints / Open Risks
 1. Search tab uses a custom media-style grid (not WP core media grid internals).
 2. Provider remains external dependency (availability/latency risk).
-3. Queue access remains role-list based in settings model (not full capability mapping).
+3. Queue access is role-list based in settings and mapped into dedicated capability `ai_alt_manage_queue` via `user_has_cap` filter.
 4. Media modal behavior depends on WP media-frame internals and can be sensitive to admin/plugin conflicts.
 
 ## 16) Suggested Next Steps
@@ -290,15 +300,16 @@ Implemented in `includes/class-alt-generator.php`.
    - role/capability access split
    - queue progress workflows
    - media grid/right-sidebar apply reliability
-2. Add provider health visibility in admin (status + recent failure trend).
-3. Add changelog/version entries for post-0.1.0 improvements.
+2. Add automated accessibility checks (axe/pa11y) for settings tabs, queue search controls, and responsive table behavior.
+3. Add provider health visibility in admin (status + recent failure trend).
+4. Add changelog/version entries for post-0.1.0 improvements.
 
 ## 17) Resume Checklist for New Codex Window
 1. Confirm status:
-- `git -C /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags status -sb`
+- `git -C /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags status -sb`
 
 2. Validate coding standards:
-- `composer -d /Users/local-esatzman/Desktop/Sites/dynmamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
+- `composer -d /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags phpcs`
 
 3. Validate core flows in WP admin:
 - Settings page admin-only access.
