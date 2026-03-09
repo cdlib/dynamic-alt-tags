@@ -769,6 +769,15 @@ class WPAI_Alt_Text_Admin {
 	 * @return string
 	 */
 	private function render_queue_rows_html( $rows, $is_history = false ) {
+		$label_select    = __( 'Select', 'dynamic-alt-tags' );
+		$label_image     = __( 'Image', 'dynamic-alt-tags' );
+		$label_status    = __( 'Status', 'dynamic-alt-tags' );
+		$label_conf      = __( 'Confidence', 'dynamic-alt-tags' );
+		$label_suggested = __( 'Suggested Alt Text', 'dynamic-alt-tags' );
+		$label_alt       = __( 'Alt Text', 'dynamic-alt-tags' );
+		$label_processed = __( 'Processed On', 'dynamic-alt-tags' );
+		$label_actions   = __( 'Actions', 'dynamic-alt-tags' );
+
 		ob_start();
 		foreach ( $rows as $row ) {
 			$row_id        = isset( $row['id'] ) ? absint( $row['id'] ) : 0;
@@ -794,12 +803,12 @@ class WPAI_Alt_Text_Admin {
 			?>
 			<tr>
 				<?php if ( ! $is_history ) : ?>
-					<th scope="row" class="check-column">
+					<th scope="row" class="check-column" data-label="<?php echo esc_attr( $label_select ); ?>">
 						<label class="screen-reader-text" for="cb-select-<?php echo esc_attr( (string) $row_id ); ?>"><?php esc_html_e( 'Select item', 'dynamic-alt-tags' ); ?></label>
 						<input id="cb-select-<?php echo esc_attr( (string) $row_id ); ?>" type="checkbox" class="ai-alt-row-checkbox" name="selected_row_ids[]" value="<?php echo esc_attr( (string) $row_id ); ?>" />
 					</th>
 				<?php endif; ?>
-				<td>
+				<td class="ai-alt-col-image" data-label="<?php echo esc_attr( $label_image ); ?>">
 					<?php if ( $thumb ) : ?>
 						<?php if ( ! empty( $image_url ) ) : ?>
 							<a href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo wp_kses_post( $thumb ); ?></a>
@@ -811,21 +820,21 @@ class WPAI_Alt_Text_Admin {
 					<?php endif; ?>
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
-				<td><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
+				<td class="ai-alt-col-status" data-label="<?php echo esc_attr( $label_status ); ?>"><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
 				<?php if ( ! $is_history ) : ?>
-					<td class="ai-alt-row-confidence"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
+					<td class="ai-alt-row-confidence ai-alt-col-confidence" data-label="<?php echo esc_attr( $label_conf ); ?>"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
 				<?php endif; ?>
 				<?php if ( $is_history ) : ?>
-					<td><?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
+					<td class="ai-alt-col-alt" data-label="<?php echo esc_attr( $label_alt ); ?>"><?php echo '' !== trim( $display_alt ) ? esc_html( $display_alt ) : esc_html__( 'None', 'dynamic-alt-tags' ); ?></td>
 				<?php endif; ?>
-				<td>
+				<td class="<?php echo esc_attr( $is_history ? 'ai-alt-col-processed' : 'ai-alt-col-suggested' ); ?>" data-label="<?php echo esc_attr( $is_history ? $label_processed : $label_suggested ); ?>">
 					<?php if ( $is_history ) : ?>
 						<?php echo '' !== $processed_on ? esc_html( $processed_on ) : '-'; ?>
 					<?php else : ?>
 						<textarea class="regular-text ai-alt-row-suggested" name="bulk_final_alt[<?php echo esc_attr( (string) $row_id ); ?>]" rows="<?php echo esc_attr( (string) $display_alt_rows ); ?>"><?php echo esc_textarea( $display_alt ); ?></textarea>
 					<?php endif; ?>
 				</td>
-					<td>
+					<td class="ai-alt-col-actions" data-label="<?php echo esc_attr( $label_actions ); ?>">
 						<?php if ( ! $is_history ) : ?>
 							<button class="button button-primary" type="submit" name="single_action" value="<?php echo esc_attr( 'approve|' . $row_id ); ?>"><?php esc_html_e( 'Approve', 'dynamic-alt-tags' ); ?></button>
 							<button class="button" type="submit" name="single_action" value="<?php echo esc_attr( 'skip|' . $row_id ); ?>"><?php esc_html_e( 'Skip Image', 'dynamic-alt-tags' ); ?></button>
@@ -863,6 +872,11 @@ class WPAI_Alt_Text_Admin {
 	 * @return string
 	 */
 	private function render_no_alt_rows_html( $rows ) {
+		$label_image   = __( 'Image', 'dynamic-alt-tags' );
+		$label_alt     = __( 'Alt Text', 'dynamic-alt-tags' );
+		$label_status  = __( 'Queue Status', 'dynamic-alt-tags' );
+		$label_actions = __( 'Actions', 'dynamic-alt-tags' );
+
 		ob_start();
 		foreach ( $rows as $row ) {
 			$attachment_id    = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
@@ -878,7 +892,7 @@ class WPAI_Alt_Text_Admin {
 			$image_url = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 			?>
 			<tr>
-				<td>
+				<td class="ai-alt-col-image" data-label="<?php echo esc_attr( $label_image ); ?>">
 					<?php if ( $thumb ) : ?>
 						<?php if ( ! empty( $image_url ) ) : ?>
 							<a href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php echo wp_kses_post( $thumb ); ?></a>
@@ -890,9 +904,9 @@ class WPAI_Alt_Text_Admin {
 					<?php endif; ?>
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
-				<td><?php esc_html_e( 'None', 'dynamic-alt-tags' ); ?></td>
-				<td><code class="ai-alt-no-alt-queue-status"><?php echo '' !== $queue_status ? esc_html( $queue_status ) : esc_html__( 'not_queued', 'dynamic-alt-tags' ); ?></code></td>
-					<td>
+				<td class="ai-alt-col-alt" data-label="<?php echo esc_attr( $label_alt ); ?>"><?php esc_html_e( 'None', 'dynamic-alt-tags' ); ?></td>
+				<td class="ai-alt-col-status" data-label="<?php echo esc_attr( $label_status ); ?>"><code class="ai-alt-no-alt-queue-status"><?php echo '' !== $queue_status ? esc_html( $queue_status ) : esc_html__( 'not_queued', 'dynamic-alt-tags' ); ?></code></td>
+					<td class="ai-alt-col-actions" data-label="<?php echo esc_attr( $label_actions ); ?>">
 						<button class="button ai-alt-add-no-alt" type="button" data-attachment-id="<?php echo esc_attr( (string) $attachment_id ); ?>" <?php echo $is_active_status ? 'disabled' : ''; ?>><?php echo esc_html( $button_label ); ?></button>
 					<?php if ( ! empty( $image_url ) ) : ?>
 						<a class="button" href="<?php echo esc_url( $image_url ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'View Image', 'dynamic-alt-tags' ); ?></a>
