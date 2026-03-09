@@ -1306,7 +1306,6 @@
 		});
 
 		document.addEventListener('DOMContentLoaded', function () {
-			clearPluginPageNotices();
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();

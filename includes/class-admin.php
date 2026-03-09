@@ -980,6 +980,12 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
 
+		$options  = $this->settings->get_options();
+		$use_url_mode = ! empty( $options['use_url_mode'] );
+		if ( ! array_key_exists( 'use_url_mode', $options ) && array_key_exists( 'direct_upload_mode', $options ) ) {
+			$use_url_mode = empty( $options['direct_upload_mode'] );
+		}
+
 		$status   = 'success';
 		$messages = array();
 		$provider = new WPAI_Alt_Text_Provider_Cloudflare( $this->settings );
@@ -1015,6 +1021,12 @@ class WPAI_Alt_Text_Admin {
 			if ( ! $image_url ) {
 				$status     = 'error';
 				$messages[] = __( 'Latest queued image test failed: attachment URL not found.', 'dynamic-alt-tags' );
+			} elseif ( $use_url_mode && ! $this->is_provider_reachable_url( $image_url ) ) {
+				$messages[] = sprintf(
+					/* translators: %d attachment id */
+					__( 'Latest queued image test skipped (attachment #%d): image URL appears local/private and is not reachable from the provider in URL mode.', 'dynamic-alt-tags' ),
+					$attachment_id
+				);
 			} else {
 				$latest_result = $provider->generate_caption(
 					$image_url,
@@ -1173,6 +1185,39 @@ class WPAI_Alt_Text_Admin {
 			'checked_at'  => $checked_at,
 			'queue_error' => $queue_error,
 		);
+	}
+
+	/**
+	 * Whether a URL is likely publicly reachable by the external provider.
+	 *
+	 * @param string $url URL to evaluate.
+	 * @return bool
+	 */
+	private function is_provider_reachable_url( $url ) {
+		$host = wp_parse_url( (string) $url, PHP_URL_HOST );
+		if ( ! is_string( $host ) || '' === trim( $host ) ) {
+			return false;
+		}
+
+		$host = strtolower( trim( $host ) );
+
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return false !== filter_var(
+				$host,
+				FILTER_VALIDATE_IP,
+				FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+			);
+		}
+
+		if ( 'localhost' === $host || false === strpos( $host, '.' ) ) {
+			return false;
+		}
+
+		if ( preg_match( '/\.(local|localhost|test|invalid)$/', $host ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
