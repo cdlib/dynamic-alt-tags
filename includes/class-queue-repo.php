@@ -402,8 +402,18 @@ class WPAI_Alt_Text_Queue_Repo {
 			$has_status_filter = true;
 		}
 
-		$total_sql = "SELECT COUNT(*) FROM {$this->table} q WHERE {$where}";
-		$rows_sql  = "SELECT q.* FROM {$this->table} q WHERE {$where} ORDER BY q.updated_at DESC LIMIT %d OFFSET %d";
+		$total_sql = "SELECT COUNT(*)
+			FROM {$this->table} q
+			LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			WHERE {$where}
+			AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')";
+		$rows_sql  = "SELECT q.*
+			FROM {$this->table} q
+			LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			WHERE {$where}
+			AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')
+			ORDER BY q.updated_at DESC
+			LIMIT %d OFFSET %d";
 
 			if ( $has_status_filter ) {
 				$total = (int) $wpdb->get_var(
@@ -454,7 +464,13 @@ class WPAI_Alt_Text_Queue_Repo {
 		global $wpdb;
 
 		$row = $wpdb->get_row(
-			"SELECT id, attachment_id, error_code, error_message, updated_at FROM {$this->table} WHERE status = 'failed' ORDER BY updated_at DESC, id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT q.id, q.attachment_id, q.error_code, q.error_message, q.updated_at
+			 FROM {$this->table} q
+			 LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			 WHERE q.status = 'failed'
+			 AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')
+			 ORDER BY q.updated_at DESC, q.id DESC
+			 LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
@@ -470,7 +486,13 @@ class WPAI_Alt_Text_Queue_Repo {
 		global $wpdb;
 
 		$row = $wpdb->get_row(
-			"SELECT id, attachment_id, status, updated_at FROM {$this->table} WHERE status IN ('queued', 'processing', 'generated', 'failed') ORDER BY updated_at DESC, id DESC LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT q.id, q.attachment_id, q.status, q.updated_at
+			 FROM {$this->table} q
+			 LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			 WHERE q.status IN ('queued', 'processing', 'generated', 'failed')
+			 AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')
+			 ORDER BY q.updated_at DESC, q.id DESC
+			 LIMIT 1", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
@@ -510,7 +532,12 @@ class WPAI_Alt_Text_Queue_Repo {
 		global $wpdb;
 
 		$rows = $wpdb->get_results(
-			"SELECT status, COUNT(*) AS c FROM {$this->table} WHERE status IN ('queued', 'processing', 'generated', 'failed') GROUP BY status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			"SELECT q.status, COUNT(*) AS c
+			 FROM {$this->table} q
+			 LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			 WHERE q.status IN ('queued', 'processing', 'generated', 'failed')
+			 AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')
+			 GROUP BY q.status", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
@@ -547,6 +574,7 @@ class WPAI_Alt_Text_Queue_Repo {
 			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
 			 WHERE p.post_type = 'attachment'
 			 AND p.post_mime_type LIKE 'image/%'
+			 AND p.post_mime_type <> 'image/svg+xml'
 			 AND (pm.meta_value IS NULL OR pm.meta_value = '')" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 	}
@@ -566,7 +594,8 @@ class WPAI_Alt_Text_Queue_Repo {
 			 FROM {$wpdb->posts} p
 			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
 			 WHERE p.post_type = 'attachment'
-			 AND p.post_mime_type LIKE 'image/%'", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			 AND p.post_mime_type LIKE 'image/%'
+			 AND p.post_mime_type <> 'image/svg+xml'", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
 		);
 
@@ -602,6 +631,7 @@ class WPAI_Alt_Text_Queue_Repo {
 			 LEFT JOIN {$wpdb->postmeta} pm ON (pm.post_id = p.ID AND pm.meta_key = '_wp_attachment_image_alt')
 			 WHERE p.post_type = 'attachment'
 			 AND p.post_mime_type LIKE 'image/%'
+			 AND p.post_mime_type <> 'image/svg+xml'
 			 AND (pm.meta_value IS NULL OR pm.meta_value = '')" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		);
 
@@ -613,6 +643,7 @@ class WPAI_Alt_Text_Queue_Repo {
 				 LEFT JOIN {$this->table} q ON (q.attachment_id = p.ID AND q.provider = %s)
 				 WHERE p.post_type = 'attachment'
 				 AND p.post_mime_type LIKE 'image/%%'
+				 AND p.post_mime_type <> 'image/svg+xml'
 				 AND (pm.meta_value IS NULL OR pm.meta_value = '')
 				 ORDER BY p.ID DESC
 				 LIMIT %d OFFSET %d",

@@ -571,6 +571,7 @@ class WPAI_Alt_Text_Admin {
 			 FROM {$wpdb->posts}
 			 WHERE post_type = 'attachment'
 			 AND post_mime_type LIKE 'image/%'
+			 AND post_mime_type <> 'image/svg+xml'
 			 AND post_status = 'inherit'
 			 ORDER BY post_date DESC", // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			ARRAY_A
@@ -652,6 +653,7 @@ class WPAI_Alt_Text_Admin {
 		$where = array(
 			"p.post_type = 'attachment'",
 			"p.post_mime_type LIKE 'image/%'",
+			"p.post_mime_type <> 'image/svg+xml'",
 			"p.post_status = 'inherit'",
 		);
 		$params = array();
