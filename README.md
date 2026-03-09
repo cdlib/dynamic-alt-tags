@@ -42,6 +42,8 @@ Go to **Media > Dynamic Alt Tags**.
 - **Approve**: apply suggested alt text
 - **Skip Image**: move item to History
 - **View Image**: open source image
+- On phones, queue rows render as stacked cards with labeled fields for readability
+- On tablets, action buttons in the Actions column are stacked to fit the viewport
 
 #### Search
 - Grid-style media browser for searching/filtering images
@@ -92,6 +94,14 @@ Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and pr
 - Check if items are already `generated` and waiting for review
 - Verify provider/network availability
 - Try processing a single row first
+
+### Queue Layout On Small Screens
+- Breakpoints:
+  - `max-width: 1024px` (tablet and down)
+  - `max-width: 782px` (mobile/tablet WP-admin collapse range)
+  - `max-width: 600px` (small phones)
+  - `max-width: 390px` (very small phones)
+  - `max-width: 932px` + `max-height: 430px` + landscape (short-height landscape phones)
 
 ### URL Mode Issues on Local/Private Sites
 - Worker may not reach local/private URLs

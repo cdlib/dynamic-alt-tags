@@ -16,19 +16,19 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `7e3fea4` - Harden admin access controls and improve WCAG admin UI support
+- `606d040` - Improve queue responsiveness for mobile and tablet
 
 Recent commits (newest first):
-1. `7e3fea4` Harden admin access controls and improve WCAG admin UI support
-2. `d37a9f4` Exclude SVG attachments from plugin views and queue metrics
-3. `d9baf40` Add clear button for queue search input
-4. `9b95791` Harden SVG queue handling and provider connection checks
-5. `b1b11ef` Refresh readmes and handoff for current search workflow
-6. `0c15fae` Remove No Alt Images tab from queue navigation
-7. `1fbecda` Refine search filters with alt-text dropdown and layout
-8. `1e1b656` Reorder queue tabs to place Search after Active Queue
-9. `72ce221` Consolidate queue search into media-grid search tab
-10. `9b1ced9` Open browse images in attachment details and return to browse
+1. `606d040` Improve queue responsiveness for mobile and tablet
+2. `7e3fea4` Harden admin access controls and improve WCAG admin UI support
+3. `d37a9f4` Exclude SVG attachments from plugin views and queue metrics
+4. `d9baf40` Add clear button for queue search input
+5. `9b95791` Harden SVG queue handling and provider connection checks
+6. `b1b11ef` Refresh readmes and handoff for current search workflow
+7. `0c15fae` Remove No Alt Images tab from queue navigation
+8. `1fbecda` Refine search filters with alt-text dropdown and layout
+9. `1e1b656` Reorder queue tabs to place Search after Active Queue
+10. `72ce221` Consolidate queue search into media-grid search tab
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -188,14 +188,21 @@ Queue Dashboard behavior:
 - Search-grid thumbnails open Attachment Details (media modal).
 
 ### Responsiveness
-- Mobile/tablet (`max-width: 782px`) responsive overrides in `assets/admin.css`.
-- Queue tables preserve table header/cell relationships on smaller screens and use horizontal scroll instead of stacked card conversion.
+- Responsive breakpoints in `assets/admin.css`:
+  - `max-width: 1024px` (tablet and down)
+  - `max-width: 782px` (mobile/tablet WP-admin collapse range)
+  - `max-width: 600px` (small phones)
+  - `max-width: 390px` (very small phones)
+  - `max-width: 932px` + `max-height: 430px` + landscape (short-height landscape phones)
+- Active Queue / History / No Alt queue tables now convert to stacked card rows on phones (`max-width: 782px`) with per-field labels.
+- In mobile stacked view, Suggested Alt Text textareas are forced full-width.
+- Action buttons are stacked vertically and full-width on phones and stacked in the Action column on tablets.
 
 ### Accessibility updates (WCAG 2.2 AA-focused)
 - Search summary now uses status semantics (`role="status"`, `aria-live="polite"`, `aria-atomic="true"`).
 - Search clear button target size increased to 24x24.
 - Search clear button now has explicit visible focus styling.
-- Mobile table semantics updated to preserve info/relationships in responsive mode.
+- Mobile stacked queue rows include explicit per-cell field labels (`data-label`) to preserve context when headers are visually hidden.
 
 ## 6) Admin UI Motif (New)
 ### Settings motif
