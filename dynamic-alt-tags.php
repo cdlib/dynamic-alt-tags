@@ -23,6 +23,7 @@ define( 'WPAI_ALT_TEXT_FILE', __FILE__ );
 define( 'WPAI_ALT_TEXT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_CRON_HOOK', 'ai_alt_text_process_queue' );
+define( 'WPAI_ALT_TEXT_QUEUE_CAP', 'ai_alt_manage_queue' );
 
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-activator.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-plugin.php';

@@ -102,6 +102,7 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'admin_init', array( $this->settings, 'register' ) );
 		add_action( 'init', array( $this, 'ensure_cron_scheduled' ), 20 );
+		add_filter( 'user_has_cap', array( $this, 'filter_user_caps' ), 10, 4 );
 		add_filter( 'cron_schedules', array( $this, 'add_cron_schedules' ) );
 		add_action( WPAI_ALT_TEXT_CRON_HOOK, array( $this, 'run_cron' ) );
 		add_action( 'add_attachment', array( $this, 'maybe_queue_attachment' ) );
@@ -129,6 +130,28 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'wp_ajax_ai_alt_settings_metrics_ajax', array( $this->admin, 'handle_settings_metrics_ajax' ) );
 
 		add_action( 'rest_api_init', array( $this->rest, 'register_routes' ) );
+	}
+
+	/**
+	 * Grant plugin-specific queue capability to users allowed by plugin settings.
+	 *
+	 * @param array<string,bool> $allcaps All capabilities for the user.
+	 * @param array<int,string>  $caps Primitive capabilities being checked.
+	 * @param array<int,mixed>   $args User capability check args.
+	 * @param WP_User            $user User object.
+	 * @return array<string,bool>
+	 */
+	public function filter_user_caps( $allcaps, $caps, $args, $user ) {
+		if ( ! ( $user instanceof WP_User ) ) {
+			return $allcaps;
+		}
+
+		if ( in_array( WPAI_ALT_TEXT_QUEUE_CAP, (array) $caps, true ) ) {
+			$allowed = $this->settings->current_user_can_access_queue( (int) $user->ID );
+			$allcaps[ WPAI_ALT_TEXT_QUEUE_CAP ] = (bool) $allowed;
+		}
+
+		return $allcaps;
 	}
 
 	/**
@@ -423,27 +446,36 @@ class WPAI_Alt_Text_Plugin {
 		$debug['request'] = array(
 			'attachment_id' => $attachment_id,
 			'action'        => $action,
-			'custom_alt'    => $custom_alt,
+			'custom_alt'    => '[redacted]',
 		);
 		$debug['before']  = array(
-			'alt_text'  => get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ),
+			'alt_text'  => '[redacted]',
 			'queue_row' => is_array( $before_row ) ? array(
 				'id'            => isset( $before_row['id'] ) ? absint( $before_row['id'] ) : 0,
 				'status'        => isset( $before_row['status'] ) ? sanitize_key( (string) $before_row['status'] ) : '',
-				'suggested_alt' => isset( $before_row['suggested_alt'] ) ? sanitize_text_field( (string) $before_row['suggested_alt'] ) : '',
-				'final_alt'     => isset( $before_row['final_alt'] ) ? sanitize_text_field( (string) $before_row['final_alt'] ) : '',
+				'error_code'    => isset( $before_row['error_code'] ) ? sanitize_key( (string) $before_row['error_code'] ) : '',
+				'suggested_alt' => '[redacted]',
+				'final_alt'     => '[redacted]',
 			) : null,
 		);
 		$result           = $this->apply_review_action( $attachment_id, $action, $custom_alt );
 		$after_row        = $this->queue_repo->get_row_by_attachment( $attachment_id );
-		$debug['result']  = $result;
+		$debug['result']  = array(
+			'ok'            => ! empty( $result['ok'] ),
+			'status'        => isset( $result['status'] ) ? sanitize_key( (string) $result['status'] ) : '',
+			'error_code'    => isset( $result['error_code'] ) ? sanitize_key( (string) $result['error_code'] ) : '',
+			'message'       => isset( $result['message'] ) ? sanitize_text_field( (string) $result['message'] ) : '',
+			'alt_text'      => '[redacted]',
+			'suggested_alt' => '[redacted]',
+		);
 		$debug['after']   = array(
-			'alt_text'  => get_post_meta( $attachment_id, '_wp_attachment_image_alt', true ),
+			'alt_text'  => '[redacted]',
 			'queue_row' => is_array( $after_row ) ? array(
 				'id'            => isset( $after_row['id'] ) ? absint( $after_row['id'] ) : 0,
 				'status'        => isset( $after_row['status'] ) ? sanitize_key( (string) $after_row['status'] ) : '',
-				'suggested_alt' => isset( $after_row['suggested_alt'] ) ? sanitize_text_field( (string) $after_row['suggested_alt'] ) : '',
-				'final_alt'     => isset( $after_row['final_alt'] ) ? sanitize_text_field( (string) $after_row['final_alt'] ) : '',
+				'error_code'    => isset( $after_row['error_code'] ) ? sanitize_key( (string) $after_row['error_code'] ) : '',
+				'suggested_alt' => '[redacted]',
+				'final_alt'     => '[redacted]',
 			) : null,
 		);
 		if ( $is_debug_enabled ) {

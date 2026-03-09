@@ -480,13 +480,13 @@
 	top: 50%;
 	right: 8px;
 	transform: translateY(-50%);
-	width: 20px;
-	height: 20px;
+	width: 24px;
+	height: 24px;
 	border: 0;
 	border-radius: 50%;
 	padding: 0;
-	font-size: 12px;
-	line-height: 20px;
+	font-size: 14px;
+	line-height: 24px;
 	text-align: center;
 	cursor: pointer;
 	background: #dbe4f2;
@@ -496,7 +496,8 @@
 .ai-alt-queue-page .ai-alt-browse-search-clear:hover,
 .ai-alt-queue-page .ai-alt-browse-search-clear:focus-visible {
 	background: #c3d1e8;
-	outline: none;
+	outline: 2px solid #1d4f91;
+	outline-offset: 1px;
 }
 
 .ai-alt-queue-page .ai-alt-browse-search-clear[hidden] {
@@ -839,33 +840,36 @@
 	.ai-alt-wrap .ai-alt-table {
 		display: block;
 		width: 100%;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
 	}
 
 	.ai-alt-wrap .ai-alt-table thead {
-		display: none;
+		display: table-header-group;
 	}
 
 	.ai-alt-wrap .ai-alt-table tbody,
 	.ai-alt-wrap .ai-alt-table tr {
-		display: block;
-		width: 100%;
+		display: table-row-group;
+		width: auto;
 	}
 
 	.ai-alt-wrap .ai-alt-table tr {
-		background: #fff;
-		border: 1px solid #dcdcde;
-		border-radius: 6px;
-		padding: 10px;
-		margin-bottom: 10px;
+		display: table-row;
+		background: transparent;
+		border: 0;
+		border-radius: 0;
+		padding: 0;
+		margin-bottom: 0;
 	}
 
 	.ai-alt-wrap .ai-alt-table th,
 	.ai-alt-wrap .ai-alt-table td {
-		display: block;
-		width: 100%;
-		padding: 6px 0;
-		white-space: normal;
-		word-break: break-word;
+		display: table-cell;
+		width: auto;
+		padding: 8px 10px;
+		white-space: nowrap;
+		word-break: normal;
 	}
 
 	.ai-alt-wrap .ai-alt-table th.check-column,

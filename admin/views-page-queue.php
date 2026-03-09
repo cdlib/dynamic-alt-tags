@@ -305,7 +305,7 @@ if ( '' !== $last_processed_at ) {
 				<button type="button" class="ai-alt-browse-search-clear" aria-label="<?php esc_attr_e( 'Clear search', 'dynamic-alt-tags' ); ?>" <?php echo '' === $browse_search ? 'hidden' : ''; ?>>X</button>
 			</div>
 		</form>
-		<p class="description" id="ai-alt-browse-summary">
+		<p class="description" id="ai-alt-browse-summary" role="status" aria-live="polite" aria-atomic="true">
 			<?php
 			echo esc_html(
 				sprintf(

@@ -63,7 +63,7 @@ class WPAI_Alt_Text_Admin {
 				'options-general.php',
 				__( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ),
 				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
-				'read',
+				'manage_options',
 				'ai-alt-text-settings',
 				array( $this, 'render_settings_page' )
 			);
@@ -74,7 +74,7 @@ class WPAI_Alt_Text_Admin {
 				'upload.php',
 				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
 				__( 'Dynamic Alt Tags', 'dynamic-alt-tags' ),
-				'read',
+				WPAI_ALT_TEXT_QUEUE_CAP,
 				'ai-alt-text-queue',
 				array( $this, 'render_queue_page' )
 			);
