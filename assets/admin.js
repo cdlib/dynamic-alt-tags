@@ -216,8 +216,23 @@
 	}
 
 	function clearPluginPageNotices() {
-		// Intentionally no-op: preserve core/plugin notices in admin screens.
-		return;
+		var pluginWraps = document.querySelectorAll('.wrap.ai-alt-wrap');
+		if (!pluginWraps.length) {
+			return;
+		}
+
+		pluginWraps.forEach(function (wrap) {
+			if (!(wrap instanceof HTMLElement)) {
+				return;
+			}
+
+			var notices = wrap.querySelectorAll('.notice, .error, .updated');
+			notices.forEach(function (notice) {
+				if (notice instanceof HTMLElement) {
+					notice.remove();
+				}
+			});
+		});
 	}
 
 	function placeRetrieveButtons() {
@@ -297,6 +312,7 @@
 				availableTabs.push(key);
 			}
 			button.addEventListener('click', function () {
+				clearPluginPageNotices();
 				activateTab(key);
 			});
 		});
@@ -312,6 +328,23 @@
 		}
 
 		activateTab(initialTab);
+	}
+
+	function initQueueTabNoticeReset() {
+		var queueTabs = document.querySelectorAll('.ai-alt-queue-page .ai-alt-queue-tabs .nav-tab');
+		if (!queueTabs.length) {
+			return;
+		}
+
+		queueTabs.forEach(function (tabLink) {
+			if (!(tabLink instanceof HTMLAnchorElement)) {
+				return;
+			}
+
+			tabLink.addEventListener('click', function () {
+				clearPluginPageNotices();
+			});
+		});
 	}
 
 	function initSettingsMetricsRefresh() {
@@ -1277,6 +1310,7 @@
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
+			initQueueTabNoticeReset();
 			initQueueBrowseTab();
 			initMediaGridReturnToBrowse();
 			autoSizeSuggestedAltTextareas(document);
