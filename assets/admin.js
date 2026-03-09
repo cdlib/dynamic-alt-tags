@@ -1334,6 +1334,7 @@
 			var noticeParams = [
 				'notice',
 				'processed',
+				'deleted',
 				'enqueued',
 				'updated',
 				'test_status',
@@ -1428,7 +1429,7 @@
 			return;
 		}
 
-		if (form.id !== 'ai-alt-process-form' && form.id !== 'ai-alt-queue-process-form' && !form.classList.contains('ai-alt-queue-form')) {
+		if (form.id !== 'ai-alt-process-form' && !form.classList.contains('ai-alt-queue-form')) {
 			return;
 		}
 
@@ -1605,114 +1606,6 @@
 			}
 		}
 
-		if (form.id === 'ai-alt-queue-process-form') {
-			event.preventDefault();
-			var queueSubmitButton = form.querySelector('button[type="submit"], input[type="submit"]');
-			var queueNonce = typeof adminData.processNowNonce === 'string' ? adminData.processNowNonce : '';
-			if (!(queueSubmitButton instanceof HTMLButtonElement || queueSubmitButton instanceof HTMLInputElement) || !ajaxUrl || !queueNonce) {
-				form.submit();
-				return;
-			}
-
-			queueSubmitButton.disabled = true;
-			setQueueProgress(0, i18n.processing || 'Processing queue...', '');
-
-			var totalProcessed = 0;
-			var iterations = 0;
-			var maxIterations = 25;
-			var lastDetailMessage = '';
-			var timerProgress = 0;
-			var queueTimer = window.setInterval(function () {
-				timerProgress = Math.min(timerProgress + 5, 90);
-				setQueueProgress(timerProgress, (i18n.processing || 'Processing queue...') + ' ' + totalProcessed + ' processed so far.', '');
-			}, 180);
-
-			function finishQueueTopError(messageText) {
-				window.clearInterval(queueTimer);
-				setQueueProgress(100, '', '');
-				window.setTimeout(function () {
-					redirectQueueNotice('queue_error', { queue_msg: messageText });
-				}, 250);
-			}
-
-			function runQueueTopChunk() {
-				iterations += 1;
-				var body = new URLSearchParams();
-				body.append('action', 'ai_alt_process_now_ajax');
-				body.append('_ajax_nonce', queueNonce);
-
-				fetch(ajaxUrl, {
-					method: 'POST',
-					credentials: 'same-origin',
-					headers: {
-						'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-					},
-					body: body.toString()
-				})
-					.then(function (response) {
-						return response.json();
-					})
-					.then(function (payload) {
-						if (!payload || payload.success !== true) {
-							var errorMessage = i18n.error || 'Queue processing failed. Please try again.';
-							if (payload && payload.data && payload.data.message) {
-								errorMessage = String(payload.data.message);
-							}
-							throw new Error(errorMessage);
-						}
-
-						var chunkProcessed = 0;
-						if (payload.data && typeof payload.data.processed !== 'undefined') {
-							chunkProcessed = Number(payload.data.processed) || 0;
-						}
-						totalProcessed += chunkProcessed;
-
-						var hasMore = false;
-						if (payload.data && typeof payload.data.has_more !== 'undefined') {
-							hasMore = Boolean(payload.data.has_more);
-						}
-						lastDetailMessage = (payload && payload.data && payload.data.message) ? String(payload.data.message) : '';
-
-						if (chunkProcessed > 0 && hasMore && iterations < maxIterations) {
-							setQueueProgress(Math.min(timerProgress, 95), (i18n.processing || 'Processing queue...') + ' ' + totalProcessed + ' processed so far.', '');
-							return runQueueTopChunk();
-						}
-
-						window.clearInterval(queueTimer);
-						if (totalProcessed > 0 && !hasMore) {
-							setQueueProgress(100, (i18n.success || 'Manual processing finished. %d items processed.').replace('%d', String(totalProcessed)), 'success');
-							window.setTimeout(function () {
-								redirectQueueNotice('queue_batch_done', { processed: totalProcessed });
-							}, 250);
-							return;
-						}
-
-						if (totalProcessed > 0 && hasMore) {
-							var partialMessage = (i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.').replace('%d', String(totalProcessed));
-							finishQueueTopError(partialMessage);
-							return;
-						}
-
-						finishQueueTopError(lastDetailMessage || (i18n.error || 'Queue processing failed. Please try again.'));
-					})
-					.catch(function (err) {
-						var fallbackMessage = (err && err.message) ? String(err.message) : (i18n.error || 'Queue processing failed. Please try again.');
-						if (totalProcessed > 0) {
-							fallbackMessage = (i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.').replace('%d', String(totalProcessed));
-						}
-						finishQueueTopError(fallbackMessage);
-					})
-					.finally(function () {
-						if (queueMessage.classList.contains('ai-alt-message-error') || queueMessage.classList.contains('ai-alt-message-success')) {
-							queueSubmitButton.disabled = false;
-						}
-					});
-			}
-
-			runQueueTopChunk();
-			return;
-		}
-
 		var bulkAction = getQueueBulkAction(form);
 		if (bulkAction !== 'process') {
 			return;
@@ -1725,7 +1618,10 @@
 
 		event.preventDefault();
 		var bulkNonce = typeof adminData.queueProcessNonce === 'string' ? adminData.queueProcessNonce : '';
-		var bulkSubmitButton = form.querySelector('.tablenav.top .button.action');
+		var submitter = event.submitter;
+		var bulkSubmitButton = (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement)
+			? submitter
+			: form.querySelector('.tablenav.top .button.action, .tablenav.bottom .button.action');
 		if (!(bulkSubmitButton instanceof HTMLButtonElement || bulkSubmitButton instanceof HTMLInputElement) || !ajaxUrl || !bulkNonce) {
 			form.submit();
 			return;

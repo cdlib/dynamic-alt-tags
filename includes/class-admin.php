@@ -349,6 +349,33 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
+	 * Delete all history rows from Queue page.
+	 *
+	 * @return void
+	 */
+	public function handle_clear_history_queue() {
+		if ( ! $this->current_user_can_view_queue() ) {
+			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
+		}
+
+		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
+
+		$deleted = $this->queue_repo->delete_history_rows();
+
+		$redirect = add_query_arg(
+			array(
+				'page'    => 'ai-alt-text-settings',
+				'notice'  => 'history_cleared',
+				'deleted' => $deleted,
+			),
+			admin_url( 'options-general.php' )
+		);
+
+		wp_safe_redirect( $redirect );
+		exit;
+	}
+
+	/**
 	 * Reset cumulative metrics.
 	 *
 	 * @return void

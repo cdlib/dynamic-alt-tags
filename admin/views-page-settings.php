@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $notice = isset( $_GET['notice'] ) ? sanitize_key( wp_unslash( $_GET['notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $active_tab = 'settings';
-if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial', 'process_error', 'provider_test' ), true ) ) {
+if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial', 'process_error', 'provider_test', 'history_cleared' ), true ) ) {
 	$active_tab = 'tools';
 } elseif ( 'metrics_reset' === $notice ) {
 	$active_tab = 'metrics';
@@ -73,6 +73,19 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 	<?php if ( 'metrics_reset' === $notice ) : ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Metrics were reset successfully.', 'dynamic-alt-tags' ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( 'history_cleared' === $notice ) : ?>
+		<div class="notice notice-success is-dismissible">
+			<p>
+				<?php
+				printf(
+					esc_html__( 'History cleared. %d item(s) deleted.', 'dynamic-alt-tags' ),
+					isset( $_GET['deleted'] ) ? absint( $_GET['deleted'] ) : 0 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				);
+				?>
+			</p>
 		</div>
 	<?php endif; ?>
 
@@ -258,6 +271,12 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				<input type="hidden" name="action" value="ai_alt_test_connection" />
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<?php submit_button( __( 'Test Provider Connection', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
+			</form>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-left:8px;" onsubmit="return window.confirm('<?php echo esc_js( __( 'Delete all history items? This cannot be undone.', 'dynamic-alt-tags' ) ); ?>');">
+				<input type="hidden" name="action" value="ai_alt_clear_history_queue" />
+				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
+				<?php submit_button( __( 'Delete History', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 			</form>
 			<p class="description"><?php esc_html_e( 'Test Provider Connection runs both a baseline provider test and a latest queued image URL test (if a queued image exists).', 'dynamic-alt-tags' ); ?></p>
 

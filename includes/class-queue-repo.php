@@ -371,6 +371,22 @@ class WPAI_Alt_Text_Queue_Repo {
 	}
 
 	/**
+	 * Delete all history rows (approved/rejected/skipped).
+	 *
+	 * @return int Number of deleted rows.
+	 */
+	public function delete_history_rows() {
+		global $wpdb;
+
+		$result = $wpdb->query(
+			"DELETE FROM {$this->table}
+			 WHERE status IN ('approved', 'rejected', 'skipped')" // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		);
+
+		return false === $result ? 0 : (int) $result;
+	}
+
+	/**
 	 * Paginate queue rows.
 	 *
 	 * @param int    $page Current page.
