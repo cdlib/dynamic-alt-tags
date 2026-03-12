@@ -178,10 +178,10 @@ class WPAI_Alt_Text_Settings {
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
 					'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
-					'auto_apply_new_uploads' => __( 'Auto-Apply Alt Text for New Uploads', 'dynamic-alt-tags' ),
+					'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
 					'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
 					'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
-					'require_review'      => __( 'Require Manual Review', 'dynamic-alt-tags' ),
+					'require_review'      => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
 					'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
 		);
 
@@ -336,9 +336,11 @@ class WPAI_Alt_Text_Settings {
 			if ( 'use_url_mode' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, the plugin sends image URLs and the Worker fetches images remotely. Leave unchecked to use Direct Upload Mode (default, recommended).', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'auto_apply_new_uploads' === $id ) {
-				echo '<p class="description">' . esc_html__( 'When enabled, newly uploaded images get AI alt text applied automatically after generation.', 'dynamic-alt-tags' ) . '</p>';
+				echo '<p class="description">' . esc_html__( 'When enabled, newly uploaded images are automatically approved and applied after generation. This overrides manual review for brand-new uploads only.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'sync_title_from_alt' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the attachment title to the same value.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'require_review' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, queue and backfill items stay in Generated status until someone approves them. New uploads can still auto-approve if "Auto-Approve New Uploads" is enabled.', 'dynamic-alt-tags' ) . '</p>';
 			}
 			return;
 		}
