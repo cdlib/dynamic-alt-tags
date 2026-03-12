@@ -512,7 +512,7 @@
 					if (shouldUpdateAltField) {
 						var altText = String(payload.data.alt_text);
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-						var shouldSyncTitle = reviewAction === 'generate' ? true : Boolean(adminData && adminData.syncTitleFromAlt);
+						var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
 						applyAltAndTitleAcrossUi(attachmentId, altText, shouldSyncTitle, container);
 					}
 
@@ -596,7 +596,8 @@
 						return;
 					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
-					applyAltAndTitleAcrossUi(attachmentId, altText, true, container);
+					var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
+					applyAltAndTitleAcrossUi(attachmentId, altText, shouldSyncTitle, container);
 				}
 			})
 			.catch(function () {
