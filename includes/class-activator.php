@@ -119,7 +119,7 @@ class WPAI_Alt_Text_Activator {
 					'batch_size'          => 10,
 					'min_confidence'      => 0.70,
 					'auto_apply_new_uploads' => 0,
-					'sync_title_from_alt' => 1,
+					'sync_title_from_alt' => 0,
 					'allowed_roles'       => array( 'administrator' ),
 					'overwrite_existing'  => 0,
 					'require_review'      => 1,
