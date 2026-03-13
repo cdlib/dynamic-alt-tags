@@ -450,7 +450,7 @@
 
 .ai-alt-queue-page .ai-alt-browse-filters {
 	display: grid;
-	grid-template-columns: 180px 180px 180px minmax(240px, 1fr);
+	grid-template-columns: 180px 180px minmax(240px, 1fr);
 	gap: 10px;
 	align-items: center;
 	padding: 12px;
@@ -458,6 +458,14 @@
 	background: #f6f8fc;
 	border-radius: 6px;
 	margin: 8px 0 12px;
+}
+
+.ai-alt-queue-page .ai-alt-browse-filters.ai-alt-browse-filters-has-extra-filter {
+	grid-template-columns: 180px 180px 180px minmax(240px, 1fr);
+}
+
+.ai-alt-queue-page .ai-alt-browse-filters.ai-alt-browse-filters-has-two-extra-filters {
+	grid-template-columns: 180px 180px 180px 180px minmax(240px, 1fr);
 }
 
 .ai-alt-queue-page .ai-alt-browse-filters select,

@@ -191,15 +191,17 @@ class WPAI_Alt_Text_Admin {
 			);
 		} elseif ( 'search' === $view ) {
 			$browse_filters = array(
-				'date'       => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
-				'search'     => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
-				'alt_filter' => isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
-				'category'   => isset( $_GET['browse_category'] ) ? absint( wp_unslash( $_GET['browse_category'] ) ) : 0,
+				'date'            => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
+				'search'          => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
+				'alt_filter'      => isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
+				'category'        => isset( $_GET['browse_category'] ) ? absint( wp_unslash( $_GET['browse_category'] ) ) : 0,
+				'filebird_folder' => isset( $_GET['browse_filebird_folder'] ) ? absint( wp_unslash( $_GET['browse_filebird_folder'] ) ) : 0,
 			);
 			$data = $this->browse_media_attachments( $browse_filters, $page, 24 );
 			$browse_month_options = $this->get_browse_month_options();
 			$browse_category_taxonomy = $this->get_media_category_taxonomy();
 			$browse_category_options  = $this->get_browse_category_options( $browse_category_taxonomy );
+			$browse_filebird_options  = $this->get_filebird_folder_options();
 		} else {
 			$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
 		}
@@ -689,6 +691,76 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
+	 * Get FileBird folder options when FileBird tables and folders exist.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function get_filebird_folder_options() {
+		global $wpdb;
+
+		$table_names = $this->get_filebird_table_names();
+		if ( empty( $table_names['folders'] ) || empty( $table_names['attachments'] ) ) {
+			return array();
+		}
+
+		$previous_suppress = $wpdb->suppress_errors( true );
+		$results           = $wpdb->get_results(
+			"SELECT id, name
+			FROM {$table_names['folders']}
+			WHERE name IS NOT NULL AND name <> ''
+			ORDER BY name ASC",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->suppress_errors( $previous_suppress );
+
+		if ( ! is_array( $results ) ) {
+			return array();
+		}
+
+		$options = array();
+		foreach ( $results as $row ) {
+			$folder_id = isset( $row['id'] ) ? absint( $row['id'] ) : 0;
+			$label     = isset( $row['name'] ) ? sanitize_text_field( (string) $row['name'] ) : '';
+			if ( $folder_id <= 0 || '' === $label ) {
+				continue;
+			}
+
+			$options[] = array(
+				'value' => $folder_id,
+				'label' => $label,
+			);
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Get FileBird table names if both expected tables exist.
+	 *
+	 * @return array<string,string>
+	 */
+	private function get_filebird_table_names() {
+		global $wpdb;
+
+		$folders_table     = $wpdb->prefix . 'fbv';
+		$attachments_table = $wpdb->prefix . 'fbv_attachment_folder';
+
+		$previous_suppress = $wpdb->suppress_errors( true );
+		$folders_exists    = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $folders_table ) );
+		$attachments_exist = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $attachments_table ) );
+		$wpdb->suppress_errors( $previous_suppress );
+
+		if ( $folders_exists !== $folders_table || $attachments_exist !== $attachments_table ) {
+			return array();
+		}
+
+		return array(
+			'folders'     => $folders_table,
+			'attachments' => $attachments_table,
+		);
+	}
+
+	/**
 	 * Browse media attachments with filters.
 	 *
 	 * @return void
@@ -701,10 +773,11 @@ class WPAI_Alt_Text_Admin {
 		check_ajax_referer( 'ai_alt_queue_browse_ajax' );
 
 		$filters = array(
-			'date'       => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
-			'search'     => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
-			'alt_filter' => isset( $_POST['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_POST['browse_alt_filter'] ) ) : ( isset( $_POST['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
-			'category'   => isset( $_POST['browse_category'] ) ? absint( wp_unslash( $_POST['browse_category'] ) ) : 0,
+			'date'            => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
+			'search'          => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
+			'alt_filter'      => isset( $_POST['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_POST['browse_alt_filter'] ) ) : ( isset( $_POST['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
+			'category'        => isset( $_POST['browse_category'] ) ? absint( wp_unslash( $_POST['browse_category'] ) ) : 0,
+			'filebird_folder' => isset( $_POST['browse_filebird_folder'] ) ? absint( wp_unslash( $_POST['browse_filebird_folder'] ) ) : 0,
 		);
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
 		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 60, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 24;
@@ -736,21 +809,29 @@ class WPAI_Alt_Text_Admin {
 	private function browse_media_attachments( $filters, $page = 1, $per_page = 24 ) {
 		global $wpdb;
 
-		$page      = max( 1, absint( $page ) );
-		$per_page  = max( 1, min( 60, absint( $per_page ) ) );
-		$offset    = ( $page - 1 ) * $per_page;
-		$date_val  = isset( $filters['date'] ) ? sanitize_text_field( (string) $filters['date'] ) : '';
-		$search    = isset( $filters['search'] ) ? sanitize_text_field( (string) $filters['search'] ) : '';
-		$category  = isset( $filters['category'] ) ? absint( $filters['category'] ) : 0;
-		$alt_filter = isset( $filters['alt_filter'] ) ? sanitize_key( (string) $filters['alt_filter'] ) : 'all';
-		$alt_filter = in_array( $alt_filter, array( 'all', 'no_alt' ), true ) ? $alt_filter : 'all';
+		$page            = max( 1, absint( $page ) );
+		$per_page        = max( 1, min( 60, absint( $per_page ) ) );
+		$offset          = ( $page - 1 ) * $per_page;
+		$date_val        = isset( $filters['date'] ) ? sanitize_text_field( (string) $filters['date'] ) : '';
+		$search          = isset( $filters['search'] ) ? sanitize_text_field( (string) $filters['search'] ) : '';
+		$category        = isset( $filters['category'] ) ? absint( $filters['category'] ) : 0;
+		$filebird_folder = isset( $filters['filebird_folder'] ) ? absint( $filters['filebird_folder'] ) : 0;
+		$alt_filter      = isset( $filters['alt_filter'] ) ? sanitize_key( (string) $filters['alt_filter'] ) : 'all';
+		$alt_filter      = in_array( $alt_filter, array( 'all', 'no_alt' ), true ) ? $alt_filter : 'all';
 		$category_taxonomy = $this->get_media_category_taxonomy();
+		$filebird_tables   = $this->get_filebird_table_names();
 
 		$where = array(
 			"p.post_type = 'attachment'",
 			"p.post_mime_type LIKE 'image/%'",
 			"p.post_mime_type <> 'image/svg+xml'",
 			"p.post_status = 'inherit'",
+		);
+		$joins  = array(
+			"LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')",
+			"LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')",
+			"LEFT JOIN {$wpdb->term_relationships} term_rel ON (term_rel.object_id = p.ID)",
+			"LEFT JOIN {$wpdb->term_taxonomy} term_tax ON (term_tax.term_taxonomy_id = term_rel.term_taxonomy_id)",
 		);
 		$params = array();
 
@@ -776,21 +857,21 @@ class WPAI_Alt_Text_Admin {
 			$params[] = $category_taxonomy;
 			$params[] = $category;
 		}
+		if ( $filebird_folder > 0 && ! empty( $filebird_tables['attachments'] ) ) {
+			$joins[]  = "INNER JOIN {$filebird_tables['attachments']} filebird_rel ON (filebird_rel.attachment_id = p.ID)";
+			$where[]  = 'filebird_rel.folder_id = %d';
+			$params[] = $filebird_folder;
+		}
 
+		$join_sql  = implode( "\n\t\t\t", $joins );
 		$where_sql = implode( ' AND ', $where );
 		$count_sql = "SELECT COUNT(DISTINCT p.ID)
 			FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
-			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
-			LEFT JOIN {$wpdb->term_relationships} term_rel ON (term_rel.object_id = p.ID)
-			LEFT JOIN {$wpdb->term_taxonomy} term_tax ON (term_tax.term_taxonomy_id = term_rel.term_taxonomy_id)
+			{$join_sql}
 			WHERE {$where_sql}";
 		$rows_sql  = "SELECT DISTINCT p.ID AS attachment_id, p.post_date
 			FROM {$wpdb->posts} p
-			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
-			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
-			LEFT JOIN {$wpdb->term_relationships} term_rel ON (term_rel.object_id = p.ID)
-			LEFT JOIN {$wpdb->term_taxonomy} term_tax ON (term_tax.term_taxonomy_id = term_rel.term_taxonomy_id)
+			{$join_sql}
 			WHERE {$where_sql}
 			ORDER BY p.post_date DESC
 			LIMIT %d OFFSET %d";

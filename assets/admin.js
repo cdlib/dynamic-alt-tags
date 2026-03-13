@@ -871,6 +871,7 @@
 			var dateFilter = form.querySelector('#ai-alt-browse-date');
 			var altFilterField = form.querySelector('#ai-alt-browse-alt-filter');
 			var categoryFilterField = form.querySelector('#ai-alt-browse-category');
+			var filebirdFolderField = form.querySelector('#ai-alt-browse-filebird-folder');
 			var searchField = form.querySelector('#ai-alt-browse-search');
 			var perPage = 24;
 			if (loadMoreButton instanceof HTMLButtonElement) {
@@ -885,6 +886,7 @@
 			body.append('browse_date', dateFilter instanceof HTMLSelectElement ? String(dateFilter.value || '') : '');
 			body.append('browse_alt_filter', altFilterField instanceof HTMLSelectElement ? String(altFilterField.value || 'all') : 'all');
 			body.append('browse_category', categoryFilterField instanceof HTMLSelectElement ? String(categoryFilterField.value || '0') : '0');
+			body.append('browse_filebird_folder', filebirdFolderField instanceof HTMLSelectElement ? String(filebirdFolderField.value || '0') : '0');
 			body.append('browse_search', searchField instanceof HTMLInputElement ? String(searchField.value || '') : '');
 
 			if (!append) {
@@ -1005,6 +1007,13 @@
 		var browseCategoryField = form.querySelector('#ai-alt-browse-category');
 		if (browseCategoryField instanceof HTMLSelectElement) {
 			browseCategoryField.addEventListener('change', function () {
+				runBrowse(1, false);
+			});
+		}
+
+		var browseFileBirdField = form.querySelector('#ai-alt-browse-filebird-folder');
+		if (browseFileBirdField instanceof HTMLSelectElement) {
+			browseFileBirdField.addEventListener('change', function () {
 				runBrowse(1, false);
 			});
 		}

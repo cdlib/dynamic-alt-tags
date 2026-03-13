@@ -40,9 +40,20 @@ $browse_search = isset( $browse_filters['search'] ) ? sanitize_text_field( (stri
 $browse_alt_filter = isset( $browse_filters['alt_filter'] ) ? sanitize_key( (string) $browse_filters['alt_filter'] ) : ( isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ) );
 $browse_alt_filter = in_array( $browse_alt_filter, array( 'all', 'no_alt' ), true ) ? $browse_alt_filter : 'all';
 $browse_category = isset( $browse_filters['category'] ) ? absint( $browse_filters['category'] ) : ( isset( $_GET['browse_category'] ) ? absint( wp_unslash( $_GET['browse_category'] ) ) : 0 );
+$browse_filebird_folder = isset( $browse_filters['filebird_folder'] ) ? absint( $browse_filters['filebird_folder'] ) : ( isset( $_GET['browse_filebird_folder'] ) ? absint( wp_unslash( $_GET['browse_filebird_folder'] ) ) : 0 );
 $browse_month_options = isset( $browse_month_options ) && is_array( $browse_month_options ) ? $browse_month_options : array();
 $browse_category_taxonomy = isset( $browse_category_taxonomy ) ? sanitize_key( (string) $browse_category_taxonomy ) : '';
 $browse_category_options  = isset( $browse_category_options ) && is_array( $browse_category_options ) ? $browse_category_options : array();
+$browse_filebird_options  = isset( $browse_filebird_options ) && is_array( $browse_filebird_options ) ? $browse_filebird_options : array();
+$browse_has_category_filter = '' !== $browse_category_taxonomy;
+$browse_has_filebird_filter = ! empty( $browse_filebird_options );
+$browse_filter_classes      = 'ai-alt-browse-filters';
+if ( $browse_has_category_filter || $browse_has_filebird_filter ) {
+	$browse_filter_classes .= ' ai-alt-browse-filters-has-extra-filter';
+}
+if ( $browse_has_category_filter && $browse_has_filebird_filter ) {
+	$browse_filter_classes .= ' ai-alt-browse-filters-has-two-extra-filters';
+}
 if ( $is_search ) {
 	if ( '' !== $browse_date ) {
 		$refresh_args['browse_date'] = $browse_date;
@@ -55,6 +66,9 @@ if ( $is_search ) {
 	}
 	if ( $browse_category > 0 ) {
 		$refresh_args['browse_category'] = $browse_category;
+	}
+	if ( $browse_filebird_folder > 0 ) {
+		$refresh_args['browse_filebird_folder'] = $browse_filebird_folder;
 	}
 }
 
@@ -283,7 +297,7 @@ if ( '' !== $last_processed_at ) {
 		</div>
 
 	<?php elseif ( $is_search ) : ?>
-		<form id="ai-alt-browse-filters" class="ai-alt-browse-filters" method="get" action="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>">
+		<form id="ai-alt-browse-filters" class="<?php echo esc_attr( $browse_filter_classes ); ?>" method="get" action="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>">
 			<input type="hidden" name="page" value="ai-alt-text-queue" />
 			<input type="hidden" name="view" value="search" />
 			<select id="ai-alt-browse-date" name="browse_date" aria-label="<?php esc_attr_e( 'Filter by date', 'dynamic-alt-tags' ); ?>">
@@ -300,7 +314,7 @@ if ( '' !== $last_processed_at ) {
 				<option value="all" <?php selected( $browse_alt_filter, 'all' ); ?>><?php esc_html_e( 'All Images', 'dynamic-alt-tags' ); ?></option>
 				<option value="no_alt" <?php selected( $browse_alt_filter, 'no_alt' ); ?>><?php esc_html_e( 'No Alt Text Images', 'dynamic-alt-tags' ); ?></option>
 			</select>
-			<?php if ( '' !== $browse_category_taxonomy ) : ?>
+			<?php if ( $browse_has_category_filter ) : ?>
 				<select id="ai-alt-browse-category" name="browse_category" aria-label="<?php esc_attr_e( 'Filter by media category', 'dynamic-alt-tags' ); ?>">
 					<option value="0"><?php esc_html_e( 'All Categories', 'dynamic-alt-tags' ); ?></option>
 					<?php foreach ( $browse_category_options as $category_option ) : ?>
@@ -308,6 +322,18 @@ if ( '' !== $last_processed_at ) {
 						<?php $category_label = isset( $category_option['label'] ) ? sanitize_text_field( (string) $category_option['label'] ) : ''; ?>
 						<?php if ( $category_value > 0 && '' !== $category_label ) : ?>
 							<option value="<?php echo esc_attr( (string) $category_value ); ?>" <?php selected( $browse_category, $category_value ); ?>><?php echo esc_html( $category_label ); ?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
+			<?php if ( $browse_has_filebird_filter ) : ?>
+				<select id="ai-alt-browse-filebird-folder" name="browse_filebird_folder" aria-label="<?php esc_attr_e( 'Filter by FileBird folder', 'dynamic-alt-tags' ); ?>">
+					<option value="0"><?php esc_html_e( 'All FileBird Folders', 'dynamic-alt-tags' ); ?></option>
+					<?php foreach ( $browse_filebird_options as $filebird_option ) : ?>
+						<?php $filebird_value = isset( $filebird_option['value'] ) ? absint( $filebird_option['value'] ) : 0; ?>
+						<?php $filebird_label = isset( $filebird_option['label'] ) ? sanitize_text_field( (string) $filebird_option['label'] ) : ''; ?>
+						<?php if ( $filebird_value > 0 && '' !== $filebird_label ) : ?>
+							<option value="<?php echo esc_attr( (string) $filebird_value ); ?>" <?php selected( $browse_filebird_folder, $filebird_value ); ?>><?php echo esc_html( $filebird_label ); ?></option>
 						<?php endif; ?>
 					<?php endforeach; ?>
 				</select>
