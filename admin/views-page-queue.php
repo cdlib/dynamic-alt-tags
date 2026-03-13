@@ -39,7 +39,10 @@ $browse_date = isset( $browse_filters['date'] ) ? sanitize_text_field( (string) 
 $browse_search = isset( $browse_filters['search'] ) ? sanitize_text_field( (string) $browse_filters['search'] ) : ( isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '' );
 $browse_alt_filter = isset( $browse_filters['alt_filter'] ) ? sanitize_key( (string) $browse_filters['alt_filter'] ) : ( isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ) );
 $browse_alt_filter = in_array( $browse_alt_filter, array( 'all', 'no_alt' ), true ) ? $browse_alt_filter : 'all';
+$browse_category = isset( $browse_filters['category'] ) ? absint( $browse_filters['category'] ) : ( isset( $_GET['browse_category'] ) ? absint( wp_unslash( $_GET['browse_category'] ) ) : 0 );
 $browse_month_options = isset( $browse_month_options ) && is_array( $browse_month_options ) ? $browse_month_options : array();
+$browse_category_taxonomy = isset( $browse_category_taxonomy ) ? sanitize_key( (string) $browse_category_taxonomy ) : '';
+$browse_category_options  = isset( $browse_category_options ) && is_array( $browse_category_options ) ? $browse_category_options : array();
 if ( $is_search ) {
 	if ( '' !== $browse_date ) {
 		$refresh_args['browse_date'] = $browse_date;
@@ -49,6 +52,9 @@ if ( $is_search ) {
 	}
 	if ( 'all' !== $browse_alt_filter ) {
 		$refresh_args['browse_alt_filter'] = $browse_alt_filter;
+	}
+	if ( $browse_category > 0 ) {
+		$refresh_args['browse_category'] = $browse_category;
 	}
 }
 
@@ -294,6 +300,18 @@ if ( '' !== $last_processed_at ) {
 				<option value="all" <?php selected( $browse_alt_filter, 'all' ); ?>><?php esc_html_e( 'All Images', 'dynamic-alt-tags' ); ?></option>
 				<option value="no_alt" <?php selected( $browse_alt_filter, 'no_alt' ); ?>><?php esc_html_e( 'No Alt Text Images', 'dynamic-alt-tags' ); ?></option>
 			</select>
+			<?php if ( '' !== $browse_category_taxonomy ) : ?>
+				<select id="ai-alt-browse-category" name="browse_category" aria-label="<?php esc_attr_e( 'Filter by media category', 'dynamic-alt-tags' ); ?>">
+					<option value="0"><?php esc_html_e( 'All Categories', 'dynamic-alt-tags' ); ?></option>
+					<?php foreach ( $browse_category_options as $category_option ) : ?>
+						<?php $category_value = isset( $category_option['value'] ) ? absint( $category_option['value'] ) : 0; ?>
+						<?php $category_label = isset( $category_option['label'] ) ? sanitize_text_field( (string) $category_option['label'] ) : ''; ?>
+						<?php if ( $category_value > 0 && '' !== $category_label ) : ?>
+							<option value="<?php echo esc_attr( (string) $category_value ); ?>" <?php selected( $browse_category, $category_value ); ?>><?php echo esc_html( $category_label ); ?></option>
+						<?php endif; ?>
+					<?php endforeach; ?>
+				</select>
+			<?php endif; ?>
 			<label class="screen-reader-text" for="ai-alt-browse-search"><?php esc_html_e( 'Search media', 'dynamic-alt-tags' ); ?></label>
 			<div class="ai-alt-browse-search-wrap">
 				<input type="search" id="ai-alt-browse-search" name="browse_search" value="<?php echo esc_attr( $browse_search ); ?>" placeholder="<?php echo esc_attr__( 'Search images', 'dynamic-alt-tags' ); ?>" />

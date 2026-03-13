@@ -194,9 +194,12 @@ class WPAI_Alt_Text_Admin {
 				'date'       => isset( $_GET['browse_date'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_date'] ) ) : '',
 				'search'     => isset( $_GET['browse_search'] ) ? sanitize_text_field( wp_unslash( $_GET['browse_search'] ) ) : '',
 				'alt_filter' => isset( $_GET['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_GET['browse_alt_filter'] ) ) : ( isset( $_GET['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
+				'category'   => isset( $_GET['browse_category'] ) ? absint( wp_unslash( $_GET['browse_category'] ) ) : 0,
 			);
 			$data = $this->browse_media_attachments( $browse_filters, $page, 24 );
 			$browse_month_options = $this->get_browse_month_options();
+			$browse_category_taxonomy = $this->get_media_category_taxonomy();
+			$browse_category_options  = $this->get_browse_category_options( $browse_category_taxonomy );
 		} else {
 			$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
 		}
@@ -623,6 +626,63 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
+	 * Get the supported media category taxonomy slug, if present.
+	 *
+	 * @return string
+	 */
+	private function get_media_category_taxonomy() {
+		$candidates = array( 'media_category' );
+
+		foreach ( $candidates as $taxonomy ) {
+			if ( taxonomy_exists( $taxonomy ) && is_object_in_taxonomy( 'attachment', $taxonomy ) ) {
+				return $taxonomy;
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Get term options for the media category dropdown.
+	 *
+	 * @param string $taxonomy Taxonomy slug.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function get_browse_category_options( $taxonomy ) {
+		$taxonomy = sanitize_key( (string) $taxonomy );
+		if ( '' === $taxonomy ) {
+			return array();
+		}
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => $taxonomy,
+				'hide_empty' => false,
+				'orderby'    => 'name',
+				'order'      => 'ASC',
+			)
+		);
+
+		if ( is_wp_error( $terms ) || ! is_array( $terms ) ) {
+			return array();
+		}
+
+		$options = array();
+		foreach ( $terms as $term ) {
+			if ( ! ( $term instanceof WP_Term ) ) {
+				continue;
+			}
+
+			$options[] = array(
+				'value' => (int) $term->term_id,
+				'label' => (string) $term->name,
+			);
+		}
+
+		return $options;
+	}
+
+	/**
 	 * Browse media attachments with filters.
 	 *
 	 * @return void
@@ -638,6 +698,7 @@ class WPAI_Alt_Text_Admin {
 			'date'       => isset( $_POST['browse_date'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_date'] ) ) : '',
 			'search'     => isset( $_POST['browse_search'] ) ? sanitize_text_field( wp_unslash( $_POST['browse_search'] ) ) : '',
 			'alt_filter' => isset( $_POST['browse_alt_filter'] ) ? sanitize_key( wp_unslash( $_POST['browse_alt_filter'] ) ) : ( isset( $_POST['browse_no_alt_only'] ) ? 'no_alt' : 'all' ),
+			'category'   => isset( $_POST['browse_category'] ) ? absint( wp_unslash( $_POST['browse_category'] ) ) : 0,
 		);
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
 		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 60, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 24;
@@ -674,8 +735,10 @@ class WPAI_Alt_Text_Admin {
 		$offset    = ( $page - 1 ) * $per_page;
 		$date_val  = isset( $filters['date'] ) ? sanitize_text_field( (string) $filters['date'] ) : '';
 		$search    = isset( $filters['search'] ) ? sanitize_text_field( (string) $filters['search'] ) : '';
+		$category  = isset( $filters['category'] ) ? absint( $filters['category'] ) : 0;
 		$alt_filter = isset( $filters['alt_filter'] ) ? sanitize_key( (string) $filters['alt_filter'] ) : 'all';
 		$alt_filter = in_array( $alt_filter, array( 'all', 'no_alt' ), true ) ? $alt_filter : 'all';
+		$category_taxonomy = $this->get_media_category_taxonomy();
 
 		$where = array(
 			"p.post_type = 'attachment'",
@@ -701,17 +764,27 @@ class WPAI_Alt_Text_Admin {
 		if ( 'no_alt' === $alt_filter ) {
 			$where[] = "(alt_meta.meta_value IS NULL OR TRIM(alt_meta.meta_value) = '')";
 		}
+		if ( $category > 0 && '' !== $category_taxonomy ) {
+			$where[]  = 'term_tax.taxonomy = %s';
+			$where[]  = 'term_tax.term_id = %d';
+			$params[] = $category_taxonomy;
+			$params[] = $category;
+		}
 
 		$where_sql = implode( ' AND ', $where );
 		$count_sql = "SELECT COUNT(DISTINCT p.ID)
 			FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
 			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
+			LEFT JOIN {$wpdb->term_relationships} term_rel ON (term_rel.object_id = p.ID)
+			LEFT JOIN {$wpdb->term_taxonomy} term_tax ON (term_tax.term_taxonomy_id = term_rel.term_taxonomy_id)
 			WHERE {$where_sql}";
 		$rows_sql  = "SELECT DISTINCT p.ID AS attachment_id, p.post_date
 			FROM {$wpdb->posts} p
 			LEFT JOIN {$wpdb->postmeta} file_meta ON (file_meta.post_id = p.ID AND file_meta.meta_key = '_wp_attached_file')
 			LEFT JOIN {$wpdb->postmeta} alt_meta ON (alt_meta.post_id = p.ID AND alt_meta.meta_key = '_wp_attachment_image_alt')
+			LEFT JOIN {$wpdb->term_relationships} term_rel ON (term_rel.object_id = p.ID)
+			LEFT JOIN {$wpdb->term_taxonomy} term_tax ON (term_tax.term_taxonomy_id = term_rel.term_taxonomy_id)
 			WHERE {$where_sql}
 			ORDER BY p.post_date DESC
 			LIMIT %d OFFSET %d";
