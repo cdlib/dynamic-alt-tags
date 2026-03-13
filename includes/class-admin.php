@@ -213,7 +213,8 @@ class WPAI_Alt_Text_Admin {
 			$browse_category_options  = $this->get_browse_category_options( $browse_category_taxonomy );
 			$browse_filebird_options  = $this->get_filebird_folder_options();
 		} else {
-			$focused_queue_ids = 'active' === $view && '' === $status ? $this->parse_attachment_ids_list( isset( $_GET['queued_ids'] ) ? wp_unslash( $_GET['queued_ids'] ) : '' ) : array();
+			$queued_ids_raw    = isset( $_GET['queued_ids'] ) ? sanitize_text_field( wp_unslash( $_GET['queued_ids'] ) ) : '';
+			$focused_queue_ids = 'active' === $view && '' === $status ? $this->parse_attachment_ids_list( $queued_ids_raw ) : array();
 			if ( 'active' === $view && ! empty( $focused_queue_ids ) && 1 === $page ) {
 				$focused_rows    = $this->queue_repo->get_active_rows_by_attachment_ids( $focused_queue_ids );
 				$remaining_data  = $this->queue_repo->get_paginated( 1, $per_page, $status, $view, $focused_queue_ids );
@@ -535,7 +536,8 @@ class WPAI_Alt_Text_Admin {
 		$status   = isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
 		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 20;
-		$exclude_attachment_ids = $this->parse_attachment_ids_list( isset( $_POST['exclude_attachment_ids'] ) ? wp_unslash( $_POST['exclude_attachment_ids'] ) : '' );
+		$exclude_attachment_ids_raw = isset( $_POST['exclude_attachment_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['exclude_attachment_ids'] ) ) : '';
+		$exclude_attachment_ids     = $this->parse_attachment_ids_list( $exclude_attachment_ids_raw );
 
 		$data     = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view, $exclude_attachment_ids );
 		$rows     = isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : array();
