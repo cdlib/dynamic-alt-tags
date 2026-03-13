@@ -41,6 +41,7 @@ class WPAI_Alt_Text_Settings {
 			'min_confidence'      => 0.70,
 			'auto_apply_new_uploads' => 0,
 			'sync_title_from_alt' => 0,
+			'search_media_taxonomy' => '',
 			'allowed_roles'       => array( 'administrator' ),
 			'overwrite_existing'  => 0,
 			'require_review'      => 1,
@@ -177,12 +178,13 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
 			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
-					'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
-					'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
-					'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
-					'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
-					'require_review'      => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
-					'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
+			'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
+			'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
+			'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
+			'search_media_taxonomy' => __( 'Search Media Taxonomy', 'dynamic-alt-tags' ),
+			'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
+			'require_review'      => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
+			'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
 		);
 
 		foreach ( $fields as $field_id => $label ) {
@@ -254,6 +256,13 @@ class WPAI_Alt_Text_Settings {
 		$current['use_url_mode']        = ! empty( $input['use_url_mode'] ) ? 1 : 0;
 		$current['auto_apply_new_uploads'] = ! empty( $input['auto_apply_new_uploads'] ) ? 1 : 0;
 		$current['sync_title_from_alt'] = ! empty( $input['sync_title_from_alt'] ) ? 1 : 0;
+		$current['search_media_taxonomy'] = '';
+		if ( isset( $input['search_media_taxonomy'] ) ) {
+			$taxonomy = sanitize_key( (string) $input['search_media_taxonomy'] );
+			if ( '' !== $taxonomy && taxonomy_exists( $taxonomy ) && is_object_in_taxonomy( 'attachment', $taxonomy ) ) {
+				$current['search_media_taxonomy'] = $taxonomy;
+			}
+		}
 		$current['overwrite_existing']  = ! empty( $input['overwrite_existing'] ) ? 1 : 0;
 		$current['require_review']      = ! empty( $input['require_review'] ) ? 1 : 0;
 		$current['keep_data_on_delete'] = ! empty( $input['keep_data_on_delete'] ) ? 1 : 0;
@@ -326,6 +335,35 @@ class WPAI_Alt_Text_Settings {
 			return;
 		}
 
+		if ( 'search_media_taxonomy' === $id ) {
+			$selected_taxonomy = isset( $options['search_media_taxonomy'] ) ? sanitize_key( (string) $options['search_media_taxonomy'] ) : '';
+			$taxonomies        = $this->get_attachment_taxonomy_options();
+			$field_id          = 'ai-alt-field-' . sanitize_html_class( $id );
+
+			printf(
+				'<select id="%1$s" name="%2$s">',
+				esc_attr( $field_id ),
+				esc_attr( $name )
+			);
+			printf(
+				'<option value="">%s</option>',
+				esc_html__( 'Auto-detect (Media Categories if available)', 'dynamic-alt-tags' )
+			);
+
+			foreach ( $taxonomies as $taxonomy ) {
+				printf(
+					'<option value="%1$s" %2$s>%3$s</option>',
+					esc_attr( (string) $taxonomy['value'] ),
+					selected( $selected_taxonomy, (string) $taxonomy['value'], false ),
+					esc_html( (string) $taxonomy['label'] )
+				);
+			}
+
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Choose which attachment taxonomy should appear as the category filter on the Search tab. Leave on auto-detect to use Media Categories when that taxonomy exists.', 'dynamic-alt-tags' ) . '</p>';
+			return;
+		}
+
 		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
@@ -386,6 +424,48 @@ class WPAI_Alt_Text_Settings {
 			$step // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		);
 
+	}
+
+	/**
+	 * Get attachment taxonomy options for the settings dropdown.
+	 *
+	 * @return array<int,array<string,string>>
+	 */
+	private function get_attachment_taxonomy_options() {
+		$taxonomy_objects = get_object_taxonomies( 'attachment', 'objects' );
+		if ( ! is_array( $taxonomy_objects ) ) {
+			return array();
+		}
+
+		$options = array();
+		foreach ( $taxonomy_objects as $taxonomy_object ) {
+			if ( ! ( $taxonomy_object instanceof WP_Taxonomy ) ) {
+				continue;
+			}
+
+			$label = isset( $taxonomy_object->labels->singular_name ) && '' !== (string) $taxonomy_object->labels->singular_name
+				? (string) $taxonomy_object->labels->singular_name
+				: (string) $taxonomy_object->label;
+
+			$options[] = array(
+				'value' => (string) $taxonomy_object->name,
+				'label' => sprintf(
+					/* translators: 1: taxonomy label, 2: taxonomy slug */
+					__( '%1$s (%2$s)', 'dynamic-alt-tags' ),
+					$label,
+					(string) $taxonomy_object->name
+				),
+			);
+		}
+
+		usort(
+			$options,
+			static function ( $a, $b ) {
+				return strcasecmp( (string) $a['label'], (string) $b['label'] );
+			}
+		);
+
+		return $options;
 	}
 
 	/**

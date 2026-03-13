@@ -626,13 +626,19 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
-	 * Get the supported media category taxonomy slug, if present.
+	 * Get the configured attachment taxonomy for Search filters, if available.
 	 *
 	 * @return string
 	 */
 	private function get_media_category_taxonomy() {
-		$candidates = array( 'media_category' );
+		$options             = $this->settings->get_options();
+		$configured_taxonomy = isset( $options['search_media_taxonomy'] ) ? sanitize_key( (string) $options['search_media_taxonomy'] ) : '';
 
+		if ( '' !== $configured_taxonomy && taxonomy_exists( $configured_taxonomy ) && is_object_in_taxonomy( 'attachment', $configured_taxonomy ) ) {
+			return $configured_taxonomy;
+		}
+
+		$candidates = array( 'media_category' );
 		foreach ( $candidates as $taxonomy ) {
 			if ( taxonomy_exists( $taxonomy ) && is_object_in_taxonomy( 'attachment', $taxonomy ) ) {
 				return $taxonomy;
