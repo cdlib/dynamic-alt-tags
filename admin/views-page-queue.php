@@ -15,6 +15,7 @@ $page_num     = isset( $data['page'] ) ? absint( $data['page'] ) : 1;
 $per_page     = isset( $data['per_page'] ) ? absint( $data['per_page'] ) : 20;
 $max_pages    = max( 1, (int) ceil( $total / $per_page ) );
 $has_more     = $page_num < $max_pages;
+$has_more     = isset( $queue_has_more ) && null !== $queue_has_more ? (bool) $queue_has_more : $has_more;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
 $view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
@@ -54,6 +55,8 @@ if ( $browse_has_category_filter || $browse_has_filebird_filter ) {
 if ( $browse_has_category_filter && $browse_has_filebird_filter ) {
 	$browse_filter_classes .= ' ai-alt-browse-filters-has-two-extra-filters';
 }
+$focused_queue_ids_csv     = isset( $focused_queue_ids ) && is_array( $focused_queue_ids ) ? implode( ',', array_map( 'absint', $focused_queue_ids ) ) : '';
+$queue_load_more_next_page = isset( $queue_load_more_next_page ) ? max( 1, absint( $queue_load_more_next_page ) ) : ( $page_num + 1 );
 if ( $is_search ) {
 	if ( '' !== $browse_date ) {
 		$refresh_args['browse_date'] = $browse_date;
@@ -231,8 +234,10 @@ if ( '' !== $last_processed_at ) {
 				echo esc_html( sprintf( __( 'Total images with no alt text: %d', 'dynamic-alt-tags' ), $total ) );
 			} elseif ( $is_search ) {
 				esc_html_e( 'Search images using upload date and keyword filters.', 'dynamic-alt-tags' );
+			} elseif ( $is_active && '' !== $focused_queue_ids_csv ) {
+				echo esc_html( sprintf( __( 'Showing %d newly added queue item(s).', 'dynamic-alt-tags' ), count( $rows ) ) );
 			} else {
-				echo esc_html( sprintf( __( 'Total queue items: %1$d out of %2$d images', 'dynamic-alt-tags' ), $total, $total_images ) );
+				echo esc_html( sprintf( __( 'Total active queue items: %d', 'dynamic-alt-tags' ), $total ) );
 			}
 			?>
 		</p>
@@ -344,6 +349,13 @@ if ( '' !== $last_processed_at ) {
 				<button type="button" class="ai-alt-browse-search-clear" aria-label="<?php esc_attr_e( 'Clear search', 'dynamic-alt-tags' ); ?>" <?php echo '' === $browse_search ? 'hidden' : ''; ?>>X</button>
 			</div>
 		</form>
+		<div class="ai-alt-browse-bulk-bar" id="ai-alt-browse-bulk-bar">
+			<button type="button" class="button" id="ai-alt-browse-bulk-toggle"><?php esc_html_e( 'Bulk Select', 'dynamic-alt-tags' ); ?></button>
+			<div class="ai-alt-browse-bulk-actions" id="ai-alt-browse-bulk-actions" hidden>
+				<button type="button" class="button button-primary" id="ai-alt-browse-add-selected" disabled><?php esc_html_e( 'Add to Queue', 'dynamic-alt-tags' ); ?></button>
+				<button type="button" class="button" id="ai-alt-browse-bulk-cancel"><?php esc_html_e( 'Cancel', 'dynamic-alt-tags' ); ?></button>
+			</div>
+		</div>
 		<p class="description" id="ai-alt-browse-summary" role="status" aria-live="polite" aria-atomic="true">
 			<?php
 			echo esc_html(
@@ -364,6 +376,11 @@ if ( '' !== $last_processed_at ) {
 
 	<?php else : ?>
 		<?php if ( ! $is_history && ! $is_no_alt ) : ?>
+			<?php if ( $is_active && '' !== $focused_queue_ids_csv ) : ?>
+				<div class="notice notice-success is-dismissible">
+					<p><?php esc_html_e( 'Showing newly added queue items first. Load more to see older queue items.', 'dynamic-alt-tags' ); ?></p>
+				</div>
+			<?php endif; ?>
 			<div class="ai-alt-progress-wrap" id="ai-alt-queue-progress-wrap" hidden>
 				<div class="ai-alt-progress-bar" id="ai-alt-queue-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
 			</div>
@@ -451,7 +468,7 @@ if ( '' !== $last_processed_at ) {
 
 		<?php if ( $has_more ) : ?>
 			<div class="tablenav ai-alt-load-more-wrap">
-				<button type="button" class="button button-primary ai-alt-load-more" data-view="<?php echo esc_attr( $view ); ?>" data-status="<?php echo esc_attr( $status ); ?>" data-next-page="<?php echo esc_attr( (string) ( $page_num + 1 ) ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'View more images', 'dynamic-alt-tags' ); ?></button>
+				<button type="button" class="button button-primary ai-alt-load-more" data-view="<?php echo esc_attr( $view ); ?>" data-status="<?php echo esc_attr( $status ); ?>" data-next-page="<?php echo esc_attr( (string) $queue_load_more_next_page ); ?>" data-exclude-ids="<?php echo esc_attr( $focused_queue_ids_csv ); ?>" data-per-page="<?php echo esc_attr( (string) $per_page ); ?>"><?php esc_html_e( 'View more images', 'dynamic-alt-tags' ); ?></button>
 			</div>
 		<?php endif; ?>
 	<?php endif; ?>

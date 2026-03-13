@@ -783,6 +783,7 @@
 		var status = String(trigger.getAttribute('data-status') || '');
 		var nextPage = Number(trigger.getAttribute('data-next-page') || '1') || 1;
 		var perPage = Number(trigger.getAttribute('data-per-page') || '20') || 20;
+		var excludeIds = String(trigger.getAttribute('data-exclude-ids') || '');
 		var tbody = document.getElementById('ai-alt-queue-tbody');
 		if (!(tbody instanceof HTMLTableSectionElement)) {
 			return;
@@ -799,6 +800,7 @@
 		body.append('status', status);
 		body.append('page', String(nextPage));
 		body.append('per_page', String(perPage));
+		body.append('exclude_attachment_ids', excludeIds);
 
 		fetch(ajaxUrl, {
 			method: 'POST',
@@ -851,6 +853,10 @@
 		var summary = document.getElementById('ai-alt-browse-summary');
 		var loadMoreButton = document.querySelector('.ai-alt-browse-load-more');
 		var loadMoreWrap = document.getElementById('ai-alt-browse-load-more-wrap');
+		var bulkToggleButton = document.getElementById('ai-alt-browse-bulk-toggle');
+		var bulkActions = document.getElementById('ai-alt-browse-bulk-actions');
+		var bulkCancelButton = document.getElementById('ai-alt-browse-bulk-cancel');
+		var addSelectedButton = document.getElementById('ai-alt-browse-add-selected');
 		if (!(form instanceof HTMLFormElement) || !(results instanceof HTMLElement) || !(summary instanceof HTMLElement)) {
 			return;
 		}
@@ -859,10 +865,116 @@
 		var i18n = adminData.i18n || {};
 		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
 		var nonce = typeof adminData.queueBrowseNonce === 'string' ? adminData.queueBrowseNonce : '';
+		var addBrowseNonce = typeof adminData.queueAddBrowseNonce === 'string' ? adminData.queueAddBrowseNonce : '';
 		var requestSerial = 0;
 		var debounceTimer = 0;
+		var bulkMode = false;
+		var selectedIds = new Set();
+		var lastSelectedAttachmentId = '';
 		if (!ajaxUrl || !nonce) {
 			return;
+		}
+
+		function updateBulkUi() {
+			var count = selectedIds.size;
+			results.classList.toggle('is-bulk-selecting', bulkMode);
+			if (bulkActions instanceof HTMLElement) {
+				bulkActions.hidden = !bulkMode;
+			}
+			if (addSelectedButton instanceof HTMLButtonElement) {
+				addSelectedButton.disabled = count < 1;
+			}
+			if (bulkToggleButton instanceof HTMLButtonElement) {
+				bulkToggleButton.hidden = bulkMode;
+			}
+		}
+
+		function syncCardSelectionStates() {
+			var cards = results.querySelectorAll('.ai-alt-browse-card');
+			cards.forEach(function (card) {
+				if (!(card instanceof HTMLElement)) {
+					return;
+				}
+				var attachmentId = String(card.getAttribute('data-attachment-id') || '');
+				var isSelected = selectedIds.has(attachmentId);
+				card.classList.toggle('is-selected', isSelected);
+			});
+		}
+
+		function setBulkMode(enabled) {
+			bulkMode = Boolean(enabled);
+			if (!bulkMode) {
+				selectedIds.clear();
+				lastSelectedAttachmentId = '';
+			}
+			syncCardSelectionStates();
+			updateBulkUi();
+		}
+
+		function getBrowseCardElements() {
+			return Array.prototype.slice.call(results.querySelectorAll('.ai-alt-browse-card')).filter(function (card) {
+				return card instanceof HTMLElement;
+			});
+		}
+
+		function getCardAttachmentId(card) {
+			if (!(card instanceof HTMLElement)) {
+				return '';
+			}
+			return String(card.getAttribute('data-attachment-id') || '');
+		}
+
+		function selectAttachmentRange(toAttachmentId) {
+			var cards = getBrowseCardElements();
+			if (!lastSelectedAttachmentId || !toAttachmentId) {
+				return false;
+			}
+
+			var startIndex = -1;
+			var endIndex = -1;
+			cards.forEach(function (card, index) {
+				var attachmentId = getCardAttachmentId(card);
+				if (attachmentId === lastSelectedAttachmentId) {
+					startIndex = index;
+				}
+				if (attachmentId === toAttachmentId) {
+					endIndex = index;
+				}
+			});
+
+			if (startIndex < 0 || endIndex < 0) {
+				return false;
+			}
+
+			var rangeStart = Math.min(startIndex, endIndex);
+			var rangeEnd = Math.max(startIndex, endIndex);
+			for (var index = rangeStart; index <= rangeEnd; index += 1) {
+				var rangeAttachmentId = getCardAttachmentId(cards[index]);
+				if (rangeAttachmentId) {
+					selectedIds.add(rangeAttachmentId);
+				}
+			}
+
+			return true;
+		}
+
+		function toggleSelectedAttachment(attachmentId, event) {
+			if (!attachmentId) {
+				return;
+			}
+
+			if (event && event.shiftKey && selectAttachmentRange(attachmentId)) {
+				lastSelectedAttachmentId = attachmentId;
+			} else {
+				if (selectedIds.has(attachmentId)) {
+					selectedIds.delete(attachmentId);
+				} else {
+					selectedIds.add(attachmentId);
+				}
+				lastSelectedAttachmentId = attachmentId;
+			}
+			syncCardSelectionStates();
+			updateBulkUi();
 		}
 
 		function updateSummary(shownCount, totalCount) {
@@ -926,6 +1038,8 @@
 			body.append('browse_search', searchField instanceof HTMLInputElement ? String(searchField.value || '') : '');
 
 			if (!append) {
+				selectedIds.clear();
+				lastSelectedAttachmentId = '';
 				results.innerHTML = '<div class="ai-alt-browse-empty">' + (i18n.browseLoading || 'Loading images...') + '</div>';
 			}
 			if (loadMoreButton instanceof HTMLButtonElement) {
@@ -960,6 +1074,8 @@
 
 					var cards = results.querySelectorAll('.ai-alt-browse-card').length;
 					updateSummary(cards, Number(payload.data.total || 0) || 0);
+					syncCardSelectionStates();
+					updateBulkUi();
 
 					if (loadMoreButton instanceof HTMLButtonElement && loadMoreWrap instanceof HTMLElement) {
 						if (payload.data.has_more) {
@@ -982,6 +1098,8 @@
 					if (loadMoreButton instanceof HTMLButtonElement) {
 						loadMoreButton.disabled = false;
 					}
+					syncCardSelectionStates();
+					updateBulkUi();
 				});
 		}
 
@@ -1062,6 +1180,65 @@
 			});
 		}
 
+		if (bulkToggleButton instanceof HTMLButtonElement) {
+			bulkToggleButton.addEventListener('click', function () {
+				setBulkMode(true);
+			});
+		}
+
+		if (bulkCancelButton instanceof HTMLButtonElement) {
+			bulkCancelButton.addEventListener('click', function () {
+				setBulkMode(false);
+			});
+		}
+
+		if (addSelectedButton instanceof HTMLButtonElement) {
+			addSelectedButton.addEventListener('click', function () {
+				if (!addBrowseNonce || selectedIds.size < 1) {
+					return;
+				}
+
+				var ids = Array.from(selectedIds);
+				addSelectedButton.disabled = true;
+
+				var body = new URLSearchParams();
+				body.append('action', 'ai_alt_queue_add_browse_ajax');
+				body.append('_ajax_nonce', addBrowseNonce);
+				ids.forEach(function (attachmentId) {
+					body.append('attachment_ids[]', attachmentId);
+				});
+
+				fetch(ajaxUrl, {
+					method: 'POST',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+					},
+					body: body.toString()
+				})
+					.then(function (response) {
+						return response.json();
+					})
+					.then(function (payload) {
+						if (!payload || payload.success !== true || !payload.data || !payload.data.redirect_url) {
+							var errorMessage = i18n.queueAddSelectedError || 'Unable to add the selected images to queue.';
+							if (payload && payload.data && payload.data.message) {
+								errorMessage = String(payload.data.message);
+							}
+							window.alert(errorMessage);
+							addSelectedButton.disabled = false;
+							return;
+						}
+
+						window.location.href = String(payload.data.redirect_url);
+					})
+					.catch(function () {
+						window.alert(i18n.queueAddSelectedError || 'Unable to add the selected images to queue.');
+						addSelectedButton.disabled = false;
+					});
+			});
+		}
+
 		results.addEventListener('click', function (event) {
 			var target = event.target;
 			if (!(target instanceof HTMLElement)) {
@@ -1073,8 +1250,20 @@
 				return;
 			}
 
+			if (bulkMode) {
+				event.preventDefault();
+				var card = link.closest('.ai-alt-browse-card');
+				if (card instanceof HTMLElement) {
+					toggleSelectedAttachment(String(card.getAttribute('data-attachment-id') || ''), event);
+				}
+				return;
+			}
+
 			addBrowseReturnParam(link);
 		});
+
+		updateBulkUi();
+		syncCardSelectionStates();
 	}
 
 		function initMediaGridReturnToBrowse() {

@@ -389,13 +389,14 @@ class WPAI_Alt_Text_Queue_Repo {
 	/**
 	 * Paginate queue rows.
 	 *
-	 * @param int    $page Current page.
-	 * @param int    $per_page Per page.
-	 * @param string $status Status filter.
-	 * @param string $view View mode: active|history.
+	 * @param int          $page Current page.
+	 * @param int          $per_page Per page.
+	 * @param string       $status Status filter.
+	 * @param string       $view View mode: active|history.
+	 * @param array<int,int> $exclude_attachment_ids Attachment IDs to exclude.
 	 * @return array<string,mixed>
 	 */
-	public function get_paginated( $page = 1, $per_page = 20, $status = '', $view = 'active' ) {
+	public function get_paginated( $page = 1, $per_page = 20, $status = '', $view = 'active', $exclude_attachment_ids = array() ) {
 		global $wpdb;
 
 		$page              = max( 1, absint( $page ) );
@@ -407,7 +408,7 @@ class WPAI_Alt_Text_Queue_Repo {
 		$history_statuses  = array( 'approved', 'rejected', 'skipped' );
 		$allowed_statuses  = 'history' === $view ? $history_statuses : $active_statuses;
 		$status            = sanitize_key( $status );
-		$has_status_filter = false;
+		$exclude_attachment_ids = array_values( array_filter( array_map( 'absint', (array) $exclude_attachment_ids ) ) );
 
 		$in_sql = "'" . implode( "', '", array_map( 'esc_sql', $allowed_statuses ) ) . "'";
 		$where  = "q.status IN ({$in_sql})";
@@ -415,7 +416,11 @@ class WPAI_Alt_Text_Queue_Repo {
 		if ( '' !== $status && in_array( $status, $allowed_statuses, true ) ) {
 			$where            .= ' AND q.status = %s';
 			$params[]          = $status;
-			$has_status_filter = true;
+		}
+		if ( ! empty( $exclude_attachment_ids ) ) {
+			$exclude_sql = implode( ', ', array_fill( 0, count( $exclude_attachment_ids ), '%d' ) );
+			$where      .= " AND q.attachment_id NOT IN ({$exclude_sql})";
+			$params      = array_merge( $params, $exclude_attachment_ids );
 		}
 
 		$total_sql = "SELECT COUNT(*)
@@ -431,7 +436,7 @@ class WPAI_Alt_Text_Queue_Repo {
 			ORDER BY q.updated_at DESC
 			LIMIT %d OFFSET %d";
 
-			if ( $has_status_filter ) {
+			if ( ! empty( $params ) ) {
 				$total = (int) $wpdb->get_var(
 					$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 						$total_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
@@ -442,13 +447,11 @@ class WPAI_Alt_Text_Queue_Repo {
 			$total = (int) $wpdb->get_var( $total_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		}
 
-		$params[] = $per_page;
-		$params[] = $offset;
-			if ( $has_status_filter ) {
+			if ( ! empty( $params ) ) {
 				$rows = $wpdb->get_results(
 						$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 							$rows_sql, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-							$params
+							array_merge( $params, array( $per_page, $offset ) )
 						),
 						ARRAY_A
 				);
@@ -469,6 +472,37 @@ class WPAI_Alt_Text_Queue_Repo {
 			'per_page' => $per_page,
 			'rows'     => is_array( $rows ) ? $rows : array(),
 		);
+	}
+
+	/**
+	 * Get active queue rows for a set of attachment IDs, newest first.
+	 *
+	 * @param array<int,int> $attachment_ids Attachment IDs.
+	 * @return array<int,array<string,mixed>>
+	 */
+	public function get_active_rows_by_attachment_ids( $attachment_ids ) {
+		global $wpdb;
+
+		$attachment_ids = array_values( array_filter( array_map( 'absint', (array) $attachment_ids ) ) );
+		if ( empty( $attachment_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $attachment_ids ), '%d' ) );
+		$sql          = "SELECT q.*
+			FROM {$this->table} q
+			LEFT JOIN {$wpdb->posts} p ON p.ID = q.attachment_id
+			WHERE q.status IN ('queued', 'processing', 'generated', 'failed')
+			AND q.attachment_id IN ({$placeholders})
+			AND (p.ID IS NULL OR p.post_mime_type <> 'image/svg+xml')
+			ORDER BY q.updated_at DESC, q.id DESC";
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare( $sql, $attachment_ids ), // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**

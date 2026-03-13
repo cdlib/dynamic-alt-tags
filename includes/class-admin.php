@@ -118,6 +118,7 @@ class WPAI_Alt_Text_Admin {
 					'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 					'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 					'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
+					'queueAddBrowseNonce' => wp_create_nonce( 'ai_alt_queue_add_browse_ajax' ),
 					'queueBrowseNonce' => wp_create_nonce( 'ai_alt_queue_browse_ajax' ),
 					'settingsMetricsNonce' => wp_create_nonce( 'ai_alt_settings_metrics_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
@@ -138,6 +139,11 @@ class WPAI_Alt_Text_Admin {
 						'browseNoResults'   => __( 'No images matched your filters.', 'dynamic-alt-tags' ),
 					'queueAddSuccess'    => __( 'Added to queue', 'dynamic-alt-tags' ),
 					'queueAddError'      => __( 'Unable to add image to queue.', 'dynamic-alt-tags' ),
+					'queueAddSelectedSuccess' => __( 'Selected images added to queue.', 'dynamic-alt-tags' ),
+					'queueAddSelectedError' => __( 'Unable to add the selected images to queue.', 'dynamic-alt-tags' ),
+					'bulkSelect'        => __( 'Bulk Select', 'dynamic-alt-tags' ),
+					'cancelSelection'   => __( 'Cancel Selection', 'dynamic-alt-tags' ),
+					'selectedCount'     => __( '%d selected', 'dynamic-alt-tags' ),
 					'selectUploadAction' => __( 'Please choose an action first.', 'dynamic-alt-tags' ),
 					'customAltRequired'  => __( 'Enter custom alt text before applying.', 'dynamic-alt-tags' ),
 					'uploadActionFailed' => __( 'Unable to apply upload action. Please try again.', 'dynamic-alt-tags' ),
@@ -181,8 +187,11 @@ class WPAI_Alt_Text_Admin {
 		if ( 'browse' === $view ) {
 			$view = 'search';
 		}
-		$page         = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
-		$per_page     = 20;
+		$focused_queue_ids         = array();
+		$queue_has_more            = null;
+		$page                      = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$queue_load_more_next_page = $page + 1;
+		$per_page                  = 20;
 		if ( 'dashboard' === $view ) {
 			$data = array(
 				'total'    => 0,
@@ -204,7 +213,21 @@ class WPAI_Alt_Text_Admin {
 			$browse_category_options  = $this->get_browse_category_options( $browse_category_taxonomy );
 			$browse_filebird_options  = $this->get_filebird_folder_options();
 		} else {
-			$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+			$focused_queue_ids = 'active' === $view && '' === $status ? $this->parse_attachment_ids_list( isset( $_GET['queued_ids'] ) ? wp_unslash( $_GET['queued_ids'] ) : '' ) : array();
+			if ( 'active' === $view && ! empty( $focused_queue_ids ) && 1 === $page ) {
+				$focused_rows    = $this->queue_repo->get_active_rows_by_attachment_ids( $focused_queue_ids );
+				$remaining_data  = $this->queue_repo->get_paginated( 1, $per_page, $status, $view, $focused_queue_ids );
+				$data            = array(
+					'total'    => count( $focused_rows ) + ( isset( $remaining_data['total'] ) ? absint( $remaining_data['total'] ) : 0 ),
+					'page'     => 1,
+					'per_page' => $per_page,
+					'rows'     => $focused_rows,
+				);
+				$queue_has_more            = ! empty( $remaining_data['total'] );
+				$queue_load_more_next_page = 1;
+			} else {
+				$data = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+			}
 		}
 		$total_images = $this->queue_repo->get_total_no_alt_images();
 		$metrics      = $this->settings->get_metrics();
@@ -512,8 +535,9 @@ class WPAI_Alt_Text_Admin {
 		$status   = isset( $_POST['status'] ) ? sanitize_key( wp_unslash( $_POST['status'] ) ) : '';
 		$page     = isset( $_POST['page'] ) ? max( 1, absint( wp_unslash( $_POST['page'] ) ) ) : 1;
 		$per_page = isset( $_POST['per_page'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['per_page'] ) ) ) ) : 20;
+		$exclude_attachment_ids = $this->parse_attachment_ids_list( isset( $_POST['exclude_attachment_ids'] ) ? wp_unslash( $_POST['exclude_attachment_ids'] ) : '' );
 
-		$data     = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view );
+		$data     = 'no_alt' === $view ? $this->queue_repo->get_no_alt_paginated( $page, $per_page ) : $this->queue_repo->get_paginated( $page, $per_page, $status, $view, $exclude_attachment_ids );
 		$rows     = isset( $data['rows'] ) && is_array( $data['rows'] ) ? $data['rows'] : array();
 		$total    = isset( $data['total'] ) ? absint( $data['total'] ) : 0;
 		$max_page = max( 1, (int) ceil( $total / $per_page ) );
@@ -564,6 +588,66 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		wp_send_json_success( array( 'message' => __( 'Added to queue', 'dynamic-alt-tags' ) ) );
+	}
+
+	/**
+	 * Add selected Search tab images to queue.
+	 *
+	 * @return void
+	 */
+	public function handle_queue_add_browse_ajax() {
+		if ( ! $this->current_user_can_view_queue() ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) ), 403 );
+		}
+
+		check_ajax_referer( 'ai_alt_queue_add_browse_ajax' );
+
+		$attachment_ids = array();
+		if ( isset( $_POST['attachment_ids'] ) ) {
+			$raw_ids = wp_unslash( $_POST['attachment_ids'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			if ( is_array( $raw_ids ) ) {
+				$attachment_ids = array_values( array_filter( array_map( 'absint', $raw_ids ) ) );
+			}
+		}
+
+		if ( empty( $attachment_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'Select at least one image first.', 'dynamic-alt-tags' ) ), 400 );
+		}
+
+		$queued_ids = array();
+		foreach ( $attachment_ids as $attachment_id ) {
+			$attachment = get_post( $attachment_id );
+			$mime_type  = (string) get_post_mime_type( $attachment_id );
+
+			if ( ! ( $attachment instanceof WP_Post ) || 'attachment' !== $attachment->post_type || 0 !== strpos( $mime_type, 'image/' ) ) {
+				continue;
+			}
+			if ( $this->is_svg_attachment( $attachment_id ) || ! current_user_can( 'edit_post', $attachment_id ) ) {
+				continue;
+			}
+			if ( $this->queue_repo->enqueue_or_requeue( $attachment_id, 0 ) ) {
+				$queued_ids[] = $attachment_id;
+			}
+		}
+
+		if ( empty( $queued_ids ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unable to add the selected images to queue.', 'dynamic-alt-tags' ) ), 200 );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'      => __( 'Selected images added to queue.', 'dynamic-alt-tags' ),
+				'queued_count' => count( $queued_ids ),
+				'redirect_url' => add_query_arg(
+					array(
+						'page'      => 'ai-alt-text-queue',
+						'view'      => 'active',
+						'queued_ids' => implode( ',', $queued_ids ),
+					),
+					admin_url( 'upload.php' )
+				),
+			)
+		);
 	}
 
 	/**
@@ -935,7 +1019,10 @@ class WPAI_Alt_Text_Admin {
 			$edit_url      = isset( $row['edit_url'] ) ? esc_url_raw( (string) $row['edit_url'] ) : '';
 			$thumb_html    = isset( $row['thumb_html'] ) ? (string) $row['thumb_html'] : '';
 			?>
-			<article class="ai-alt-browse-card">
+			<article class="ai-alt-browse-card" data-attachment-id="<?php echo esc_attr( (string) $attachment_id ); ?>">
+				<span class="ai-alt-browse-selection-indicator" aria-hidden="true">
+					<span class="ai-alt-browse-select-check"></span>
+				</span>
 				<a class="ai-alt-browse-thumb-link" href="<?php echo esc_url( $edit_url ); ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Open attachment details for %s', 'dynamic-alt-tags' ), '' !== $title ? $title : '#' . $attachment_id ) ); ?>">
 					<?php if ( '' !== $thumb_html ) : ?>
 						<?php echo wp_kses_post( $thumb_html ); ?>
@@ -947,6 +1034,26 @@ class WPAI_Alt_Text_Admin {
 			<?php
 		}
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Parse a comma-separated attachment ID list.
+	 *
+	 * @param mixed $value Raw list.
+	 * @return array<int,int>
+	 */
+	private function parse_attachment_ids_list( $value ) {
+		if ( is_array( $value ) ) {
+			$parts = $value;
+		} else {
+			$parts = preg_split( '/[\s,]+/', (string) $value );
+		}
+
+		if ( ! is_array( $parts ) ) {
+			return array();
+		}
+
+		return array_values( array_unique( array_filter( array_map( 'absint', $parts ) ) ) );
 	}
 
 	/**

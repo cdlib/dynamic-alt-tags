@@ -512,6 +512,25 @@
 	display: none;
 }
 
+.ai-alt-queue-page .ai-alt-browse-bulk-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 6px 0 4px;
+}
+
+.ai-alt-queue-page .ai-alt-browse-bulk-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.ai-alt-queue-page .ai-alt-browse-bulk-count {
+	font-weight: 600;
+	color: #31435f;
+}
+
 .ai-alt-queue-page .ai-alt-browse-grid.ai-alt-browse-grid-media {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
@@ -520,12 +539,61 @@
 }
 
 .ai-alt-queue-page .ai-alt-browse-card {
+	position: relative;
 	margin: 0;
 	padding: 0;
 	border: 1px solid #d0d8e6;
 	background: #ffffff;
 	border-radius: 2px;
 	overflow: hidden;
+}
+
+.ai-alt-queue-page .ai-alt-browse-grid.is-bulk-selecting .ai-alt-browse-card {
+	opacity: 0.5;
+}
+
+.ai-alt-queue-page .ai-alt-browse-card.is-selected {
+	border-color: #1d4f91;
+	box-shadow: 0 0 0 2px rgba(29, 79, 145, 0.16);
+	opacity: 1;
+}
+
+.ai-alt-queue-page .ai-alt-browse-selection-indicator {
+	position: absolute;
+	top: -1px;
+	right: -1px;
+	z-index: 2;
+	width: 30px;
+	height: 30px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border: 2px solid #ffffff;
+	border-radius: 0 0 0 3px;
+	background: #1d4f91;
+	color: #ffffff;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.16s ease;
+}
+
+.ai-alt-queue-page .ai-alt-browse-card.is-selected .ai-alt-browse-selection-indicator {
+	opacity: 1;
+	visibility: visible;
+}
+
+.ai-alt-queue-page .ai-alt-browse-select-check::before {
+	content: "";
+	display: block;
+	width: 10px;
+	height: 6px;
+	border-left: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.ai-alt-queue-page .ai-alt-browse-grid.is-bulk-selecting .ai-alt-browse-thumb-link {
+	cursor: pointer;
 }
 
 .ai-alt-queue-page .ai-alt-browse-thumb-link {
@@ -902,6 +970,17 @@
 }
 
 @media screen and (max-width: 782px) {
+	.ai-alt-queue-page .ai-alt-browse-bulk-bar,
+	.ai-alt-queue-page .ai-alt-browse-bulk-actions {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.ai-alt-queue-page .ai-alt-browse-bulk-bar .button,
+	.ai-alt-queue-page .ai-alt-browse-bulk-actions .button {
+		width: 100%;
+	}
+
 	.ai-alt-queue-page .ai-alt-queue-shell {
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
