@@ -41,6 +41,7 @@ class WPAI_Alt_Text_Settings {
 			'min_confidence'      => 0.70,
 			'auto_apply_new_uploads' => 0,
 			'sync_title_from_alt' => 0,
+			'sync_description_from_alt' => 0,
 			'search_media_taxonomy' => '',
 			'allowed_roles'       => array( 'administrator' ),
 			'overwrite_existing'  => 0,
@@ -181,6 +182,7 @@ class WPAI_Alt_Text_Settings {
 			'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
 			'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
 			'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
+			'sync_description_from_alt' => __( 'Sync Alt Text to Attachment Description', 'dynamic-alt-tags' ),
 			'search_media_taxonomy' => __( 'Search Media Taxonomy', 'dynamic-alt-tags' ),
 			'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
 			'require_review'      => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
@@ -256,6 +258,7 @@ class WPAI_Alt_Text_Settings {
 		$current['use_url_mode']        = ! empty( $input['use_url_mode'] ) ? 1 : 0;
 		$current['auto_apply_new_uploads'] = ! empty( $input['auto_apply_new_uploads'] ) ? 1 : 0;
 		$current['sync_title_from_alt'] = ! empty( $input['sync_title_from_alt'] ) ? 1 : 0;
+		$current['sync_description_from_alt'] = ! empty( $input['sync_description_from_alt'] ) ? 1 : 0;
 		$current['search_media_taxonomy'] = '';
 		if ( isset( $input['search_media_taxonomy'] ) ) {
 			$taxonomy = sanitize_key( (string) $input['search_media_taxonomy'] );
@@ -364,7 +367,7 @@ class WPAI_Alt_Text_Settings {
 			return;
 		}
 
-		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
+		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'sync_description_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
 				esc_attr( $name ),
@@ -377,6 +380,8 @@ class WPAI_Alt_Text_Settings {
 				echo '<p class="description">' . esc_html__( 'When enabled, newly uploaded images are automatically approved and applied after generation. This overrides manual review for brand-new uploads only.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'sync_title_from_alt' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the attachment title to the same value.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'sync_description_from_alt' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the WordPress attachment description to the same value.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'require_review' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, queue and backfill items stay in Generated status until someone approves them. New uploads can still auto-approve if "Auto-Approve New Uploads" is enabled.', 'dynamic-alt-tags' ) . '</p>';
 			}

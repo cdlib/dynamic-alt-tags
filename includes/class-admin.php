@@ -122,6 +122,7 @@ class WPAI_Alt_Text_Admin {
 					'settingsMetricsNonce' => wp_create_nonce( 'ai_alt_settings_metrics_ajax' ),
 				'uploadActionNonce'  => wp_create_nonce( 'ai_alt_upload_action_ajax' ),
 				'syncTitleFromAlt'   => ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] ),
+				'syncDescriptionFromAlt' => ! empty( $options['sync_description_from_alt'] ),
 				'i18n'               => array(
 					'processing'         => __( 'Processing queue...', 'dynamic-alt-tags' ),
 					'success'            => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),

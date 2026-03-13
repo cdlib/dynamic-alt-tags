@@ -46,7 +46,28 @@
 		});
 	}
 
-	function setMediaModelFields(attachmentId, altText, titleText, syncTitle) {
+	function setDescriptionFieldValue(scope, value, attachmentId) {
+		var selectors = [
+			'textarea[data-setting="description"]',
+			'[data-setting="description"]',
+			'#attachment-details-two-column-description',
+			'textarea#content',
+			'textarea[name="attachments[' + attachmentId + '][post_content]"]'
+		];
+
+		selectors.forEach(function (selector) {
+			var nodes = (scope || document).querySelectorAll(selector);
+			nodes.forEach(function (node) {
+				if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+					node.value = value;
+					node.dispatchEvent(new Event('input', { bubbles: true }));
+					node.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+			});
+		});
+	}
+
+	function setMediaModelFields(attachmentId, altText, titleText, syncTitle, descriptionText, syncDescription) {
 		if (!window.wp || !window.wp.media) {
 			return;
 		}
@@ -87,12 +108,15 @@
 		if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
 			model.set('title', titleText);
 		}
+		if (syncDescription && typeof descriptionText === 'string' && descriptionText.trim()) {
+			model.set('description', descriptionText);
+		}
 		if (typeof model.trigger === 'function') {
 			model.trigger('change');
 		}
 	}
 
-	function setActiveSelectionModelFields(altText, titleText, syncTitle) {
+	function setActiveSelectionModelFields(altText, titleText, syncTitle, descriptionText, syncDescription) {
 		if (!window.wp || !window.wp.media || !window.wp.media.frame || typeof window.wp.media.frame.state !== 'function') {
 			return;
 		}
@@ -117,6 +141,9 @@
 			if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
 				model.set('title', titleText);
 			}
+			if (syncDescription && typeof descriptionText === 'string' && descriptionText.trim()) {
+				model.set('description', descriptionText);
+			}
 			if (typeof model.trigger === 'function') {
 				model.trigger('change');
 			}
@@ -125,8 +152,9 @@
 		}
 	}
 
-	function applyAltAndTitleAcrossUi(attachmentId, altText, syncTitle, container) {
+	function applyAltAndMetaAcrossUi(attachmentId, altText, syncTitle, syncDescription, container) {
 		var shouldSyncTitle = Boolean(syncTitle);
+		var shouldSyncDescription = Boolean(syncDescription);
 		var updateOnce = function () {
 			try {
 				if (container instanceof HTMLElement) {
@@ -134,13 +162,19 @@
 					if (shouldSyncTitle) {
 						setTitleFieldValue(container, altText, attachmentId);
 					}
+					if (shouldSyncDescription) {
+						setDescriptionFieldValue(container, altText, attachmentId);
+					}
 				}
 				setAltFieldValue(document, altText, attachmentId);
 				if (shouldSyncTitle) {
 					setTitleFieldValue(document, altText, attachmentId);
 				}
-				setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle);
-				setActiveSelectionModelFields(altText, altText, shouldSyncTitle);
+				if (shouldSyncDescription) {
+					setDescriptionFieldValue(document, altText, attachmentId);
+				}
+				setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle, altText, shouldSyncDescription);
+				setActiveSelectionModelFields(altText, altText, shouldSyncTitle, altText, shouldSyncDescription);
 			} catch (e) {
 				// Never turn a successful server response into a UI error due to local binding issues.
 			}
@@ -513,7 +547,8 @@
 						var altText = String(payload.data.alt_text);
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 						var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
-						applyAltAndTitleAcrossUi(attachmentId, altText, shouldSyncTitle, container);
+						var shouldSyncDescription = Boolean(adminData && adminData.syncDescriptionFromAlt);
+						applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncDescription, container);
 					}
 
 					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
@@ -597,7 +632,8 @@
 					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 					var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
-					applyAltAndTitleAcrossUi(attachmentId, altText, shouldSyncTitle, container);
+					var shouldSyncDescription = Boolean(adminData && adminData.syncDescriptionFromAlt);
+					applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncDescription, container);
 				}
 			})
 			.catch(function () {

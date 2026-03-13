@@ -120,6 +120,7 @@ class WPAI_Alt_Text_Activator {
 				'min_confidence'      => 0.70,
 				'auto_apply_new_uploads' => 0,
 				'sync_title_from_alt' => 0,
+				'sync_description_from_alt' => 0,
 				'search_media_taxonomy' => '',
 				'allowed_roles'       => array( 'administrator' ),
 				'overwrite_existing'  => 0,
