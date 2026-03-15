@@ -235,6 +235,96 @@
 		});
 	}
 
+	function sanitizeFocusedQueueIds(value) {
+		return String(value || '')
+			.split(',')
+			.map(function (part) {
+				return String(part || '').replace(/[^0-9]/g, '');
+			})
+			.filter(function (part) {
+				return part !== '';
+			})
+			.join(',');
+	}
+
+	function getFocusedQueueStorageKey() {
+		return 'ai_alt_focused_queue_ids:' + String(window.location.pathname || '');
+	}
+
+	function getStoredFocusedQueueIds() {
+		try {
+			return sanitizeFocusedQueueIds(window.localStorage.getItem(getFocusedQueueStorageKey()) || '');
+		} catch (e) {
+			return '';
+		}
+	}
+
+	function storeFocusedQueueIds(value) {
+		var sanitized = sanitizeFocusedQueueIds(value);
+		try {
+			if (!sanitized) {
+				window.localStorage.removeItem(getFocusedQueueStorageKey());
+				return;
+			}
+			window.localStorage.setItem(getFocusedQueueStorageKey(), sanitized);
+		} catch (e) {
+			// Ignore storage access issues.
+		}
+	}
+
+	function clearFocusedQueueIds() {
+		storeFocusedQueueIds('');
+	}
+
+	function syncGenerateQueuedButtonState() {
+		var trigger = document.getElementById('ai-alt-generate-all-visible');
+		var form = document.querySelector('.ai-alt-queue-form');
+		if (!(trigger instanceof HTMLButtonElement) || !(form instanceof HTMLFormElement)) {
+			return;
+		}
+
+		var queuedCount = 0;
+		var checkboxes = form.querySelectorAll('input.ai-alt-row-checkbox');
+		checkboxes.forEach(function (checkbox) {
+			if (checkbox instanceof HTMLInputElement && String(checkbox.getAttribute('data-is-queued') || '') === '1') {
+				queuedCount += 1;
+			}
+		});
+
+		trigger.disabled = queuedCount < 1;
+	}
+
+	function initFocusedQueuePersistence() {
+		var wrap = document.querySelector('.ai-alt-queue-page');
+		if (!(wrap instanceof HTMLElement) || !wrap.classList.contains('ai-alt-queue-view-active')) {
+			return false;
+		}
+
+		var currentIds = sanitizeFocusedQueueIds(wrap.getAttribute('data-focused-queue-ids') || '');
+		if (currentIds) {
+			storeFocusedQueueIds(currentIds);
+			return false;
+		}
+
+		var url = new URL(window.location.href);
+		var queryIds = sanitizeFocusedQueueIds(url.searchParams.get('queued_ids') || '');
+		if (queryIds) {
+			storeFocusedQueueIds(queryIds);
+			return false;
+		}
+
+		var storedIds = getStoredFocusedQueueIds();
+		if (!storedIds) {
+			return false;
+		}
+
+		url.searchParams.set('page', 'ai-alt-text-queue');
+		url.searchParams.set('view', 'active');
+		url.searchParams.set('queued_ids', storedIds);
+		window.location.replace(url.toString());
+		return true;
+	}
+
 	function hideUploadActionHint(select) {
 		if (!(select instanceof HTMLSelectElement)) {
 			return;
@@ -788,6 +878,9 @@
 		if (!(tbody instanceof HTMLTableSectionElement)) {
 			return;
 		}
+		if (view === 'active' && excludeIds) {
+			clearFocusedQueueIds();
+		}
 
 		trigger.disabled = true;
 		var originalLabel = trigger.textContent || '';
@@ -825,6 +918,7 @@
 
 				tbody.insertAdjacentHTML('beforeend', payload.data.html);
 				autoSizeSuggestedAltTextareas(tbody);
+				syncGenerateQueuedButtonState();
 
 				var hasMore = Boolean(payload.data.has_more);
 				var newNextPage = Number(payload.data.next_page || (nextPage + 1));
@@ -1230,7 +1324,12 @@
 							return;
 						}
 
-						window.location.href = String(payload.data.redirect_url);
+						var redirectUrl = new URL(String(payload.data.redirect_url), window.location.origin);
+						var queuedIds = sanitizeFocusedQueueIds(redirectUrl.searchParams.get('queued_ids') || '');
+						if (queuedIds) {
+							storeFocusedQueueIds(queuedIds);
+						}
+						window.location.href = redirectUrl.toString();
 					})
 					.catch(function () {
 						window.alert(i18n.queueAddSelectedError || 'Unable to add the selected images to queue.');
@@ -1386,6 +1485,7 @@
 				if (statusNode instanceof HTMLElement) {
 					statusNode.textContent = 'queued';
 				}
+				storeFocusedQueueIds(attachmentId);
 				if (messageNode instanceof HTMLElement) {
 					messageNode.textContent = i18n.queueAddSuccess || 'Added to queue';
 					messageNode.classList.add('ai-alt-message-success');
@@ -1659,13 +1759,18 @@
 		if (!(trigger instanceof HTMLButtonElement) || !(form instanceof HTMLFormElement)) {
 			return;
 		}
+		syncGenerateQueuedButtonState();
 
 		trigger.addEventListener('click', function () {
+			if (trigger.disabled) {
+				return;
+			}
 			var checkboxes = Array.prototype.slice.call(form.querySelectorAll('input.ai-alt-row-checkbox'));
 			var eligible = checkboxes.filter(function (checkbox) {
-				return checkbox instanceof HTMLInputElement && String(checkbox.getAttribute('data-needs-generation') || '') === '1';
+				return checkbox instanceof HTMLInputElement && String(checkbox.getAttribute('data-is-queued') || '') === '1';
 			});
 			if (!eligible.length) {
+				syncGenerateQueuedButtonState();
 				return;
 			}
 
@@ -1994,5 +2099,8 @@
 		processNextBulkRow();
 	});
 
-	initGenerateAllVisibleButton();
+	if (!initFocusedQueuePersistence()) {
+		initGenerateAllVisibleButton();
+		syncGenerateQueuedButtonState();
+	}
 })();

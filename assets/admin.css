@@ -429,6 +429,21 @@
 	outline-offset: 1px;
 }
 
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary[disabled],
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:disabled,
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary[disabled]:hover,
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:disabled:hover,
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary[disabled]:focus,
+.ai-alt-queue-page .ai-alt-queue-process-top .button.button-primary:disabled:focus {
+	background: linear-gradient(180deg, rgba(226, 232, 240, 0.18) 0%, rgba(181, 193, 209, 0.2) 100%) !important;
+	border-color: rgba(190, 201, 216, 0.28) !important;
+	color: rgba(232, 238, 246, 0.78) !important;
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(20, 31, 46, 0.06) !important;
+	cursor: not-allowed;
+	opacity: 1;
+	transform: none;
+}
+
 .ai-alt-queue-page .ai-alt-table {
 	border: 1px solid var(--ai-alt-slate-200);
 	border-radius: 8px;

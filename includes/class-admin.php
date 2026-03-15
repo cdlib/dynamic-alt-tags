@@ -1081,6 +1081,7 @@ class WPAI_Alt_Text_Admin {
 			$attachment_id = isset( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
 			$status        = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
 			$needs_generation = in_array( $status, array( 'queued', 'failed' ), true );
+			$is_queued        = 'queued' === $status;
 			$confidence    = isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0;
 			$suggested     = isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 			$final_alt     = isset( $row['final_alt'] ) ? (string) $row['final_alt'] : '';
@@ -1103,7 +1104,7 @@ class WPAI_Alt_Text_Admin {
 				<?php if ( ! $is_history ) : ?>
 					<th scope="row" class="check-column" data-label="<?php echo esc_attr( $label_select ); ?>">
 						<label class="screen-reader-text" for="cb-select-<?php echo esc_attr( (string) $row_id ); ?>"><?php esc_html_e( 'Select item', 'dynamic-alt-tags' ); ?></label>
-						<input id="cb-select-<?php echo esc_attr( (string) $row_id ); ?>" type="checkbox" class="ai-alt-row-checkbox" data-needs-generation="<?php echo $needs_generation ? '1' : '0'; ?>" name="selected_row_ids[]" value="<?php echo esc_attr( (string) $row_id ); ?>" />
+						<input id="cb-select-<?php echo esc_attr( (string) $row_id ); ?>" type="checkbox" class="ai-alt-row-checkbox" data-needs-generation="<?php echo $needs_generation ? '1' : '0'; ?>" data-is-queued="<?php echo $is_queued ? '1' : '0'; ?>" name="selected_row_ids[]" value="<?php echo esc_attr( (string) $row_id ); ?>" />
 					</th>
 				<?php endif; ?>
 				<td class="ai-alt-col-image" data-label="<?php echo esc_attr( $label_image ); ?>">

@@ -57,13 +57,12 @@ if ( $browse_has_category_filter && $browse_has_filebird_filter ) {
 }
 $focused_queue_ids_csv     = isset( $focused_queue_ids ) && is_array( $focused_queue_ids ) ? implode( ',', array_map( 'absint', $focused_queue_ids ) ) : '';
 $queue_load_more_next_page = isset( $queue_load_more_next_page ) ? max( 1, absint( $queue_load_more_next_page ) ) : ( $page_num + 1 );
-$show_generate_all_button  = false;
+$queued_row_count          = 0;
 if ( $is_active && ! empty( $rows ) ) {
 	foreach ( $rows as $queue_row ) {
 		$queue_status = isset( $queue_row['status'] ) ? sanitize_key( (string) $queue_row['status'] ) : '';
-		if ( in_array( $queue_status, array( 'queued', 'failed' ), true ) ) {
-			$show_generate_all_button = true;
-			break;
+		if ( 'queued' === $queue_status ) {
+			++$queued_row_count;
 		}
 	}
 }
@@ -110,7 +109,7 @@ if ( '' !== $last_processed_at ) {
 	}
 }
 ?>
-<div class="wrap ai-alt-wrap ai-alt-queue-page ai-alt-queue-view-<?php echo esc_attr( $view ); ?>">
+<div class="wrap ai-alt-wrap ai-alt-queue-page ai-alt-queue-view-<?php echo esc_attr( $view ); ?>" data-focused-queue-ids="<?php echo esc_attr( $focused_queue_ids_csv ); ?>">
 	<h1><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h1>
 	<div class="ai-alt-queue-shell">
 	<div class="ai-alt-queue-header-bar">
@@ -175,9 +174,7 @@ if ( '' !== $last_processed_at ) {
 					<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 					<button type="submit" class="button button-primary"><?php esc_html_e( 'Run Backfill', 'dynamic-alt-tags' ); ?></button>
 				</form>
-				<?php if ( $show_generate_all_button ) : ?>
-					<button type="button" class="button button-primary" id="ai-alt-generate-all-visible"><?php esc_html_e( 'Generate Alt Text For All', 'dynamic-alt-tags' ); ?></button>
-				<?php endif; ?>
+				<button type="button" class="button button-primary" id="ai-alt-generate-all-visible" <?php echo $queued_row_count > 0 ? '' : 'disabled'; ?>><?php esc_html_e( 'Generate Alt Text For Queued', 'dynamic-alt-tags' ); ?></button>
 				<a class="button button-primary" href="<?php echo esc_url( add_query_arg( $refresh_args, admin_url( 'upload.php' ) ) ); ?>"><?php esc_html_e( 'Refresh', 'dynamic-alt-tags' ); ?></a>
 			</div>
 		<?php endif; ?>
