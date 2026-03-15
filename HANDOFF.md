@@ -16,19 +16,19 @@ Current git state:
 - `main` synced with `origin/main`.
 
 Latest commit:
-- `606d040` - Improve queue responsiveness for mobile and tablet
+- `57b5458` - Add generate-all action for active queue
 
 Recent commits (newest first):
-1. `606d040` Improve queue responsiveness for mobile and tablet
-2. `7e3fea4` Harden admin access controls and improve WCAG admin UI support
-3. `d37a9f4` Exclude SVG attachments from plugin views and queue metrics
-4. `d9baf40` Add clear button for queue search input
-5. `9b95791` Harden SVG queue handling and provider connection checks
-6. `b1b11ef` Refresh readmes and handoff for current search workflow
-7. `0c15fae` Remove No Alt Images tab from queue navigation
-8. `1fbecda` Refine search filters with alt-text dropdown and layout
-9. `1e1b656` Reorder queue tabs to place Search after Active Queue
-10. `72ce221` Consolidate queue search into media-grid search tab
+1. `57b5458` Add generate-all action for active queue
+2. `ccb71da` Sanitize focused queue request params
+3. `efac47c` Add bulk queue selection to search
+4. `a12def9` Add attachment description sync option
+5. `a3fbde6` Add FileBird search filter support
+6. `18ca39a` Add configurable media taxonomy for search
+7. `c38059e` Add media category filter to queue search
+8. `9198431` Set first-install checkbox defaults for settings
+9. `2d3fa3f` Respect title sync setting in attachment details generation
+10. `3a5dd2e` Clarify review and auto-approve settings labels
 
 ## 2) Current Menus and Navigation
 ### Settings menu (left admin)
@@ -82,12 +82,17 @@ Settings are rendered by `includes/class-settings.php` and `admin/views-page-set
 - Batch Size
 - Min Confidence
 - Use URL Mode - Send Image URL
-- Auto-Apply Alt Text for New Uploads
+- Auto-Approve New Uploads
 - Sync Alt Text to Attachment Title
+- Sync Alt Text to Attachment Description
+- Search Media Taxonomy
 - Overwrite Existing Alt Text
-- Require Manual Review
+- Require Manual Review for Queue Items
 - Keep Data On Delete
 - Roles Allowed To Access Dynamic Alt Tags
+
+### First-install checkbox defaults
+- All checkbox settings default to unchecked except `Require Manual Review for Queue Items`, which defaults to checked.
 
 ### Token behavior
 - If Cloudflare API Token field is saved empty, stored token is cleared.
@@ -150,17 +155,25 @@ Default queue view from left Media menu:
 
 ### Search tab behavior
 - Grid-only media-style image browser.
-- Filters: `All dates` dropdown + `All Images / No Alt Text Images` dropdown + `Search images` field.
+- Filters always include: `All dates` + `All Images / No Alt Text Images` + `Search images`.
+- Optional filters appear only when available:
+  - selected attachment taxonomy terms (`All Categories`) based on `Search Media Taxonomy` settings field or auto-detected `media_category`
+  - FileBird Lite folder filter (`All FileBird Folders`) when FileBird virtual folders/tables exist
 - Search input is live/debounced; dropdown changes auto-refresh results.
 - Search input includes an inline clear (`X`) button.
 - Supports paginated `Load More Images` via AJAX.
+- Includes `Bulk Select` mode with WordPress-media-library-style selection UI:
+  - selected thumbnails show a corner check
+  - non-selected thumbnails dim while bulk mode is active
+  - shift-click range selection is supported across visible search results
+  - selected images can be sent to queue via `Add to Queue`
 - Clicking a thumbnail opens WordPress Attachment Details (media modal).
 - Closing the modal returns to the plugin Search tab with current filters.
 
 ### Actions and labels
 - Active row actions: `Approve`, `Skip Image`, `Generate Alt Text`, `View Image`
 - History row actions: `Re-queue`, `View Image`
-- Top actions: `Run Backfill`, `Generate Alt Text`, `Refresh`
+- Top actions: `Run Backfill`, `Generate Alt Text For All`, `Refresh`
 
 Queue Dashboard behavior:
 - Uses dashboard metrics cards/table (same data set as settings metrics panel).
@@ -169,6 +182,7 @@ Queue Dashboard behavior:
 ### Bulk actions
 - Order now: `Approve`, `Skip Image`, `Generate Alt Text`
 - `Reject` is not in bulk dropdown.
+- `Generate Alt Text For All` reuses the existing bulk-process flow and progress bar by auto-selecting visible `queued`/`failed` rows.
 
 ### Suggested Alt Text field behavior
 - Rendered as autosizing textarea in Active Queue rows so full suggestions are visible.
@@ -177,9 +191,14 @@ Queue Dashboard behavior:
 ### Progress UI
 - Queue-level progress bar appears below “Total queue items” and above bulk actions.
 - Used for:
-  - Top `Generate Alt Text` processing
+  - Top `Generate Alt Text For All` processing
   - Bulk `Generate Alt Text` processing
 - Inline top progress error text suppressed; errors surface in top alert notices.
+
+### Active Queue focused-view behavior
+- When items are bulk-added from Search, the Active Queue initially shows only the newly queued items.
+- Older queue items are hidden from the initial page and appear only after the user clicks `View more images`.
+- Focused Active Queue state is carried via `queued_ids` request parameter and excluded correctly from older-row pagination.
 
 ### Refresh behavior
 - `Refresh` uses clean queue URL args (page/view/status/paged) to avoid stale alerts.
@@ -230,14 +249,15 @@ Implemented in `includes/class-plugin.php` and `assets/admin.js`.
 
 ### Reliability fixes for Media Library grid/right-sidebar
 - Frontend updates both:
-  - DOM fields (Alt/Text and Title if sync enabled)
+  - DOM fields (Alt/Text, Title if enabled, and Description if enabled)
   - `wp.media` model state for selected attachment
 - Reapplies updates after short delays to survive async sidebar re-renders.
 - Prevents false “Unable to apply upload action” messages after successful apply.
 
-### Alt/title sync behavior
+### Alt/title/description sync behavior
 - Wherever alt text is applied, title sync follows `sync_title_from_alt` (default on).
-- Attachment Details `Generate Alt Text` also updates title field/model in the media UI after successful apply.
+- Description sync follows `sync_description_from_alt` (default off).
+- Attachment Details `Generate Alt Text` updates title/description fields and media-model state only when the corresponding sync settings are enabled.
 
 ## 8) Alt Text Truncation Behavior
 Implemented in `includes/class-alt-generator.php`.
@@ -301,6 +321,7 @@ Implemented in `includes/class-alt-generator.php`.
 2. Provider remains external dependency (availability/latency risk).
 3. Queue access is role-list based in settings and mapped into dedicated capability `ai_alt_manage_queue` via `user_has_cap` filter.
 4. Media modal behavior depends on WP media-frame internals and can be sensitive to admin/plugin conflicts.
+5. FileBird Search integration depends on FileBird Lite table structure (`fbv`, `fbv_attachment_folder`) rather than WP taxonomy APIs.
 
 ## 16) Suggested Next Steps
 1. Add integration tests for:
@@ -325,9 +346,15 @@ Implemented in `includes/class-alt-generator.php`.
 - Settings tools actions redirect correctly (no access error).
 - Queue tabs and top action header render and align correctly.
 - Search tab date/alt-filter/search controls update results correctly and `Load More Images` appends correctly.
+- Search tab optional taxonomy filter appears only when configured/available.
+- Search tab FileBird folder filter appears only when FileBird folders exist.
+- Search tab bulk-select mode works, including shift-click range selection and `Add to Queue`.
+- After Search bulk add, Active Queue initially shows only the newly added items; `View more images` reveals older queue items.
+- `Generate Alt Text For All` appears only when visible Active Queue rows still need generation and uses the existing progress flow.
 - Search thumbnail click opens Attachment Details modal and returns to Search tab on close.
 - History row `Re-queue` action returns items to Active Queue.
 - Attachment Details `Generate Alt Text` behavior in list and grid/sidebar media views.
+- Attachment Details title/description sync behavior respects both sync settings.
 - SVG behavior checks:
   - SVGs are not queued from backfill or manual queue add actions.
   - Processing skips SVG rows cleanly (no provider 502 surfaced to UI).
