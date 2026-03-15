@@ -1653,6 +1653,59 @@
 		return ids;
 	}
 
+	function initGenerateAllVisibleButton() {
+		var trigger = document.getElementById('ai-alt-generate-all-visible');
+		var form = document.querySelector('.ai-alt-queue-form');
+		if (!(trigger instanceof HTMLButtonElement) || !(form instanceof HTMLFormElement)) {
+			return;
+		}
+
+		trigger.addEventListener('click', function () {
+			var checkboxes = Array.prototype.slice.call(form.querySelectorAll('input.ai-alt-row-checkbox'));
+			var eligible = checkboxes.filter(function (checkbox) {
+				return checkbox instanceof HTMLInputElement && String(checkbox.getAttribute('data-needs-generation') || '') === '1';
+			});
+			if (!eligible.length) {
+				return;
+			}
+
+			checkboxes.forEach(function (checkbox) {
+				if (checkbox instanceof HTMLInputElement) {
+					checkbox.checked = false;
+				}
+			});
+			eligible.forEach(function (checkbox) {
+				checkbox.checked = true;
+			});
+
+			var selectAll = form.querySelector('.ai-alt-select-all');
+			if (selectAll instanceof HTMLInputElement) {
+				selectAll.checked = false;
+			}
+
+			var topSelect = form.querySelector('#bulk-action-selector-top');
+			var bottomSelect = form.querySelector('#bulk-action-selector-bottom');
+			if (topSelect instanceof HTMLSelectElement) {
+				topSelect.value = 'process';
+			}
+			if (bottomSelect instanceof HTMLSelectElement) {
+				bottomSelect.value = '-1';
+			}
+
+			var topApplyButton = form.querySelector('.tablenav.top .button.action');
+			if (typeof form.requestSubmit === 'function' && (topApplyButton instanceof HTMLButtonElement || topApplyButton instanceof HTMLInputElement)) {
+				form.requestSubmit(topApplyButton);
+				return;
+			}
+			if (topApplyButton instanceof HTMLButtonElement || topApplyButton instanceof HTMLInputElement) {
+				topApplyButton.click();
+				return;
+			}
+
+			form.submit();
+		});
+	}
+
 	function redirectQueueNotice(notice, params) {
 		var url = new URL(window.location.href);
 		url.searchParams.set('page', 'ai-alt-text-queue');
@@ -1940,4 +1993,6 @@
 
 		processNextBulkRow();
 	});
+
+	initGenerateAllVisibleButton();
 })();
