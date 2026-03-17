@@ -91,7 +91,7 @@ class WPAI_Alt_Text_Processor {
 
 				if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
 					$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
-					$this->record_processing_metric( false, $started_at );
+					$this->record_processing_metric( false, $started_at, 0.0, false, $attachment_id );
 					continue;
 				}
 				if ( $this->is_svg_attachment( $attachment_id ) ) {
@@ -108,7 +108,7 @@ class WPAI_Alt_Text_Processor {
 			$image_url = wp_get_attachment_url( $attachment_id );
 			if ( ! $image_url ) {
 				$this->queue_repo->mark_failed( $row_id, 'missing_image_url', 'Attachment URL not found.' );
-				$this->record_processing_metric( false, $started_at );
+				$this->record_processing_metric( false, $started_at, 0.0, false, $attachment_id );
 				continue;
 			}
 
@@ -133,7 +133,7 @@ class WPAI_Alt_Text_Processor {
 						'error'         => $result->get_error_code(),
 					)
 				);
-				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called );
+				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called, $attachment_id );
 				continue;
 			}
 
@@ -143,7 +143,7 @@ class WPAI_Alt_Text_Processor {
 
 			if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
 				$this->queue_repo->mark_failed( $row_id, 'bad_alt_output', 'Generated alt text did not pass quality checks.' );
-				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called );
+				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called, $attachment_id );
 				continue;
 			}
 
@@ -153,7 +153,7 @@ class WPAI_Alt_Text_Processor {
 				$this->approve_row( $row_id, $alt_text );
 			}
 
-			$this->record_processing_metric( true, $started_at, $provider_latency_ms, $provider_called );
+			$this->record_processing_metric( true, $started_at, $provider_latency_ms, $provider_called, $attachment_id );
 			++$processed;
 		}
 
@@ -187,7 +187,7 @@ class WPAI_Alt_Text_Processor {
 
 			if ( ! $this->current_user_can_edit_attachment( $attachment_id ) ) {
 				$this->queue_repo->mark_failed( $row_id, 'forbidden_attachment', 'Current user cannot edit this attachment.' );
-				$this->record_processing_metric( false, $started_at );
+				$this->record_processing_metric( false, $started_at, 0.0, false, $attachment_id );
 				return false;
 			}
 			if ( $this->is_svg_attachment( $attachment_id ) ) {
@@ -203,7 +203,7 @@ class WPAI_Alt_Text_Processor {
 		$image_url = wp_get_attachment_url( $attachment_id );
 		if ( ! $image_url ) {
 			$this->queue_repo->mark_failed( $row_id, 'missing_image_url', 'Attachment URL not found.' );
-			$this->record_processing_metric( false, $started_at );
+			$this->record_processing_metric( false, $started_at, 0.0, false, $attachment_id );
 			return false;
 		}
 
@@ -219,7 +219,7 @@ class WPAI_Alt_Text_Processor {
 		$provider_time       = $this->elapsed_ms( $provider_started_at );
 		if ( is_wp_error( $result ) ) {
 			$this->queue_repo->mark_failed( $row_id, $result->get_error_code(), $result->get_error_message() );
-			$this->record_processing_metric( false, $started_at, $provider_time, true );
+			$this->record_processing_metric( false, $started_at, $provider_time, true, $attachment_id );
 			return false;
 		}
 
@@ -228,13 +228,13 @@ class WPAI_Alt_Text_Processor {
 		$alt_text   = $this->generator->to_alt_text( $caption );
 		if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
 			$this->queue_repo->mark_failed( $row_id, 'bad_alt_output', 'Generated alt text did not pass quality checks.' );
-			$this->record_processing_metric( false, $started_at, $provider_time, true );
+			$this->record_processing_metric( false, $started_at, $provider_time, true, $attachment_id );
 			return false;
 		}
 
 		$this->queue_repo->mark_generated( $row_id, wp_json_encode( $result ), $alt_text, $confidence );
 		update_post_meta( $attachment_id, '_ai_alt_review_required', 1 );
-		$this->record_processing_metric( true, $started_at, $provider_time, true );
+		$this->record_processing_metric( true, $started_at, $provider_time, true, $attachment_id );
 
 		return true;
 	}
@@ -351,9 +351,10 @@ class WPAI_Alt_Text_Processor {
 	 * @param bool  $provider_called Whether a provider request was made.
 	 * @return void
 	 */
-	private function record_processing_metric( $success, $started_at, $provider_latency_ms = 0.0, $provider_called = false ) {
+	private function record_processing_metric( $success, $started_at, $provider_latency_ms = 0.0, $provider_called = false, $attachment_id = 0 ) {
 		$this->settings->record_processing_metrics(
 			array(
+				'attachment_id'       => absint( $attachment_id ),
 				'success'             => (bool) $success,
 				'provider_called'     => (bool) $provider_called,
 				'processing_time_ms'  => $this->elapsed_ms( $started_at ),

@@ -72,6 +72,7 @@ class WPAI_Alt_Text_Settings {
 	public function get_metrics() {
 		$defaults = array(
 			'total_images_processed'   => 0,
+			'processed_attachment_ids' => array(),
 			'success_count'            => 0,
 			'failure_count'            => 0,
 			'provider_call_count'      => 0,
@@ -89,7 +90,13 @@ class WPAI_Alt_Text_Settings {
 
 		$metrics = wp_parse_args( $raw, $defaults );
 
-		$metrics['total_images_processed']    = max( 0, absint( $metrics['total_images_processed'] ) );
+		$processed_attachment_ids = isset( $metrics['processed_attachment_ids'] ) && is_array( $metrics['processed_attachment_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['processed_attachment_ids'] ) ) ) )
+			: array();
+		$metrics['processed_attachment_ids']  = $processed_attachment_ids;
+		$metrics['total_images_processed']    = ! empty( $processed_attachment_ids )
+			? count( $processed_attachment_ids )
+			: max( 0, absint( $metrics['total_images_processed'] ) );
 		$metrics['success_count']             = max( 0, absint( $metrics['success_count'] ) );
 		$metrics['failure_count']             = max( 0, absint( $metrics['failure_count'] ) );
 		$metrics['provider_call_count']       = max( 0, absint( $metrics['provider_call_count'] ) );
@@ -111,12 +118,16 @@ class WPAI_Alt_Text_Settings {
 	public function record_processing_metrics( $event ) {
 		$metrics = $this->get_metrics();
 
+		$attachment_id        = isset( $event['attachment_id'] ) ? absint( $event['attachment_id'] ) : 0;
 		$is_success          = ! empty( $event['success'] );
 		$provider_call_count = ! empty( $event['provider_called'] ) ? 1 : 0;
 		$processing_time_ms  = isset( $event['processing_time_ms'] ) ? max( 0.0, (float) $event['processing_time_ms'] ) : 0.0;
 		$provider_latency_ms = isset( $event['provider_latency_ms'] ) ? max( 0.0, (float) $event['provider_latency_ms'] ) : 0.0;
 
-		$metrics['total_images_processed'] += 1;
+		if ( $attachment_id > 0 && ! in_array( $attachment_id, $metrics['processed_attachment_ids'], true ) ) {
+			$metrics['processed_attachment_ids'][] = $attachment_id;
+		}
+		$metrics['total_images_processed'] = count( $metrics['processed_attachment_ids'] );
 		if ( $is_success ) {
 			$metrics['success_count'] += 1;
 		} else {
