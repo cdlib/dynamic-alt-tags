@@ -18,6 +18,7 @@ require_once WPAI_ALT_TEXT_DIR . 'includes/class-logger.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-processor.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-admin.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-rest.php';
+require_once WPAI_ALT_TEXT_DIR . 'includes/class-updater.php';
 
 class WPAI_Alt_Text_Plugin {
 
@@ -64,6 +65,13 @@ class WPAI_Alt_Text_Plugin {
 	private $rest;
 
 	/**
+	 * Updater.
+	 *
+	 * @var WPAI_Alt_Text_Updater
+	 */
+	private $updater;
+
+	/**
 	 * Get singleton.
 	 *
 	 * @return WPAI_Alt_Text_Plugin
@@ -89,6 +97,7 @@ class WPAI_Alt_Text_Plugin {
 		$this->processor = new WPAI_Alt_Text_Processor( $this->settings, $this->queue_repo, $provider, $generator, $logger );
 		$this->admin     = new WPAI_Alt_Text_Admin( $this->settings, $this->queue_repo, $this->processor );
 		$this->rest      = new WPAI_Alt_Text_REST( $this->queue_repo, $this->processor );
+		$this->updater   = new WPAI_Alt_Text_Updater();
 
 		$this->register_hooks();
 	}
