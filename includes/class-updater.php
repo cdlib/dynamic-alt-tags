@@ -24,11 +24,15 @@ class WPAI_Alt_Text_Updater {
 	 * @return array<string,string>
 	 */
 	private function get_icon_urls() {
-		$icon_url = esc_url_raw( plugins_url( 'assets/plugin-icon.svg', WPAI_ALT_TEXT_FILE ) );
+		$svg_icon_url = esc_url_raw( plugins_url( 'assets/plugin-icon.svg', WPAI_ALT_TEXT_FILE ) );
+		$icon_1x_url  = esc_url_raw( plugins_url( 'assets/plugin-icon-128.png', WPAI_ALT_TEXT_FILE ) );
+		$icon_2x_url  = esc_url_raw( plugins_url( 'assets/plugin-icon-256.png', WPAI_ALT_TEXT_FILE ) );
 
 		return array(
-			'svg'     => $icon_url,
-			'default' => $icon_url,
+			'svg'     => $svg_icon_url,
+			'2x'      => $icon_2x_url,
+			'1x'      => $icon_1x_url,
+			'default' => $svg_icon_url,
 		);
 	}
 
