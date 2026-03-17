@@ -14,7 +14,8 @@ $active_tab = 'settings';
 if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial', 'process_error', 'provider_test', 'history_cleared' ), true ) ) {
 	$active_tab = 'tools';
 } elseif ( 'metrics_reset' === $notice ) {
-	$active_tab = 'metrics';
+	$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'metrics'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$active_tab = in_array( $active_tab, array( 'settings', 'tools', 'access-control', 'metrics' ), true ) ? $active_tab : 'metrics';
 }
 ?>
 <div class="wrap ai-alt-wrap ai-alt-settings-page">
@@ -241,6 +242,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="ai-alt-metrics-reset-form">
 				<input type="hidden" name="action" value="ai_alt_reset_metrics" />
+				<input type="hidden" name="return_tab" value="metrics" />
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<?php submit_button( __( 'Reset Metrics', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 			</form>
@@ -277,6 +279,13 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				<input type="hidden" name="action" value="ai_alt_clear_history_queue" />
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<?php submit_button( __( 'Delete History', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
+			</form>
+
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-left:8px;">
+				<input type="hidden" name="action" value="ai_alt_reset_metrics" />
+				<input type="hidden" name="return_tab" value="tools" />
+				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
+				<?php submit_button( __( 'Reset Metrics', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 			</form>
 			<p class="description"><?php esc_html_e( 'Test Provider Connection runs both a baseline provider test and a latest queued image URL test (if a queued image exists).', 'dynamic-alt-tags' ); ?></p>
 

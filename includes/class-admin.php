@@ -417,11 +417,14 @@ class WPAI_Alt_Text_Admin {
 
 		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
 		$this->settings->reset_metrics();
+		$return_tab = isset( $_POST['return_tab'] ) ? sanitize_key( wp_unslash( $_POST['return_tab'] ) ) : 'metrics';
+		$return_tab = in_array( $return_tab, array( 'settings', 'tools', 'access-control', 'metrics' ), true ) ? $return_tab : 'metrics';
 
 		$redirect = add_query_arg(
 			array(
 				'page'   => 'ai-alt-text-settings',
 				'notice' => 'metrics_reset',
+				'tab'    => $return_tab,
 			),
 			admin_url( 'options-general.php' )
 		);
