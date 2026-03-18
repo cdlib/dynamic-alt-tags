@@ -5,14 +5,15 @@ Generate and manage AI-suggested alt text for WordPress images using a Cloudflar
 ## Overview
 Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and applying AI image alt text suggestions.
 
-### Key Features
+### Highlights
 - Queue-based processing for media library images
-- Cloudflare Worker integration for AI alt suggestions
-- Queue review actions: **Approve**, **Skip Image**, **Generate Alt Text**
-- Queue and history workflow for review tracking
-- Attachment Details action to generate/apply alt text
-- Mobile/tablet responsive queue layout
-- Role-based access control for queue access
+- Search tab with live filters, grid browsing, and bulk queue add
+- Active Queue review workflow with approve, skip, and generate actions
+- History bulk `Re-queue` support
+- Attachment Details button for one-off alt generation
+- Optional title and description sync
+- Live metrics with reset tools
+- Self-hosted plugin updates with native update-page icon metadata
 
 ## Requirements
 - WordPress 6.2+
@@ -24,7 +25,7 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 1. Upload the plugin to `/wp-content/plugins/dynamic-alt-tags`.
 2. Activate it from **Plugins**.
 3. Go to **Settings > Dynamic Alt Tags**.
-4. Add your Cloudflare Worker URL and Cloudflare token.
+4. Add your Cloudflare Worker URL and token.
 5. Click **Test Provider Connection** and save.
 
 ## Usage
@@ -32,37 +33,42 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 1. Open **Settings > Dynamic Alt Tags** and verify provider settings.
 2. Process queue items from Settings or **Media > Dynamic Alt Tags**.
 3. Review suggestions and approve/skip as needed.
-4. In Attachment Details, click **Generate Alt Text** for one-off generation.
+4. Use **Generate Alt Text** in Attachment Details for one-off generation.
 
 ### Queue Workflow
 Go to **Media > Dynamic Alt Tags**.
 
 #### Active Queue
-- **Generate Alt Text**: generate/refresh suggestion
+- **Generate Alt Text**: generate or refresh suggestion
 - **Approve**: apply suggested alt text
 - **Skip Image**: move item to History
 - **View Image**: open source image
-- On phones, queue rows render as stacked cards with labeled fields for readability
-- On tablets, action buttons in the Actions column are stacked to fit the viewport
+- Top actions: **Run Backfill**, **Generate Alt Text For Queued**, **Refresh**
+- Bulk actions: **Approve**, **Skip Image**, **Generate Alt Text**
 
 #### Search
-- Grid-style media browser for searching/filtering images
+- Grid-style media browser for searching and filtering images
 - Filters:
-  - **All dates** dropdown
-  - **All Images / No Alt Text Images** dropdown
-  - **Search images** input (live/debounced)
+  - **All dates**
+  - **All Images / No Alt Text Images**
+  - **Search images**
+  - optional media taxonomy filter
+  - optional FileBird folder filter
 - **Load More Images** appends additional results
-- Clicking a thumbnail opens WordPress **Attachment Details** (media modal) and returns to the plugin Search tab when the modal closes
+- **Bulk Select** supports shift-click range selection and **Add to Queue**
+- Clicking a thumbnail opens WordPress **Attachment Details** and returns to Search on close
+- Bulk-added Search results can be focused first in Active Queue
 
 #### History
-Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and processed timestamp.
+- Shows finalized items (`approved`, `rejected`, `skipped`) with final alt text and processed timestamp
+- Row actions: **Re-queue**, **View Image**
+- Bulk action: **Re-queue**
 
 ### Attachment Details Workflow
 - No queue row: image is queued and processed
 - `generated`: suggested alt text is applied
 - `processing`: try-again message is shown
-- `skipped`: automatically requeued and processed
-- `approved` / `rejected`: must be requeued from Queue page
+- `skipped`, `approved`, `rejected`: automatically requeued and processed
 
 ## Access and Permissions
 ### Settings
@@ -70,7 +76,7 @@ Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and pr
 
 ### Queue
 - Administrators always have access
-- Additional roles can be granted queue access in **Settings > Dynamic Alt Tags > Access Control**
+- Additional roles can be granted queue access in **Settings > Dynamic Alt Tags > Access**
 
 ## Settings Reference
 - Cloudflare Worker URL
@@ -78,11 +84,22 @@ Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and pr
 - Batch Size
 - Min Confidence
 - Use URL Mode - Send Image URL
-- Auto-Apply Alt Text for New Uploads
+- Auto-Approve New Uploads
 - Sync Alt Text to Attachment Title
+- Sync Alt Text to Attachment Description
+- Search Media Taxonomy
 - Overwrite Existing Alt Text
-- Require Manual Review
+- Require Manual Review for Queue Items
 - Keep Data On Delete
+
+## Metrics Notes
+- **Total images processed** now counts unique attachment IDs, not raw processing attempts
+- If you want a clean baseline after older event-based metrics, use **Reset Metrics**
+
+## Self-Hosted Updates
+- The plugin can check a hosted `info.json` endpoint for updates
+- `Dashboard > Updates` can display a custom plugin icon through native WordPress update metadata
+- Fallback icon assets are included for `svg`, `1x`, and `2x` update icon slots
 
 ## Troubleshooting
 ### Provider Test Fails
@@ -95,22 +112,22 @@ Shows finalized items (`approved`, `rejected`, `skipped`) with confidence and pr
 - Verify provider/network availability
 - Try processing a single row first
 
-### Queue Layout On Small Screens
-- Breakpoints:
-  - `max-width: 1024px` (tablet and down)
-  - `max-width: 782px` (mobile/tablet WP-admin collapse range)
-  - `max-width: 600px` (small phones)
-  - `max-width: 390px` (very small phones)
-  - `max-width: 932px` + `max-height: 430px` + landscape (short-height landscape phones)
-
 ### URL Mode Issues on Local/Private Sites
 - Worker may not reach local/private URLs
 - Disable URL mode and use direct upload mode
 
 ## Changelog
+### 0.1.4
+- Add History bulk re-queue workflow
+- Fix History table layout for the new bulk action column
+- Count unique attachments in metrics instead of raw processing events
+- Add Reset Metrics action to the Tools tab
+- Add self-hosted updater and native update-page plugin icon support
+- Add PNG fallback icon assets
+
 ### 0.1.0
 - Initial MVP
 
 ---
 
-**Note:** `readme.txt` remains the WordPress.org-compatible readme source.
+`readme.txt` remains the WordPress.org-compatible readme source.

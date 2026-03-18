@@ -2,9 +2,9 @@
 Contributors: ericsatzman
 Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
-Tested up to: 6.8
+Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 0.1.0
+Stable tag: 0.1.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -15,18 +15,22 @@ Dynamic Alt Tags provides an admin-first workflow for generating, reviewing, and
 
 === Overview ===
 The plugin is designed for editorial teams that need fast generation plus controlled review:
-* Generate suggestions in bulk from a queue
-* Review and approve or skip suggestions before publication
-* Generate directly from Attachment Details when needed
+* Generate suggestions in bulk from a queue.
+* Review and approve or skip suggestions before publication.
+* Generate directly from Attachment Details when needed.
+* Re-queue finalized items from History when you want to run them again.
 
 === Key Features ===
 * Queue-based processing for media library images.
 * Cloudflare Worker provider integration for AI alt suggestions.
-* Queue review actions: Approve, Skip Image, and Generate Alt Text.
-* Queue and history flow for reviewed items.
-* Attachment details button to Generate Alt Text directly into the Alternative Text field.
+* Queue review actions: Approve, Skip Image, Generate Alt Text, and bulk re-queue from History.
+* Search tab with grid-based media browser, live filters, and bulk selection.
+* Focused Active Queue view after bulk-adding items from Search.
+* Attachment Details button to Generate Alt Text directly into the Alternative Text field.
+* Sync options for attachment title and description.
+* Queue dashboard and settings metrics with Reset Metrics action.
+* Self-hosted plugin update support with native update-page icon metadata.
 * Mobile/tablet responsive queue layout improvements.
-* Cleanup of plugin queue/meta data when an attachment is deleted.
 * Role-based access control for queue visibility and actions.
 
 === Requirements ===
@@ -68,6 +72,16 @@ Row actions:
 * `Skip Image`: moves item to History without applying
 * `View Image`: opens source image in a new tab
 
+Top actions:
+* `Run Backfill`
+* `Generate Alt Text For Queued`
+* `Refresh`
+
+Bulk actions:
+* `Approve`
+* `Skip Image`
+* `Generate Alt Text`
+
 ==== Search ====
 Grid-style media browser for finding/filtering attachments.
 
@@ -75,13 +89,24 @@ Filters:
 * `All dates`
 * `All Images` or `No Alt Text Images`
 * `Search images` (live/debounced)
+* Optional media taxonomy filter
+* Optional FileBird folder filter
 
 Behavior:
 * `Load More Images` appends additional results.
+* `Bulk Select` supports shift-click range selection and `Add to Queue`.
 * Clicking a thumbnail opens WordPress Attachment Details (media modal) and returns to the plugin Search tab when the modal closes.
+* After bulk add from Search, the Active Queue can focus on the newly added items first.
 
 ==== History ====
-Shows finalized items (`approved`, `rejected`, `skipped`) with confidence, final alt text, and processed timestamp.
+Shows finalized items (`approved`, `rejected`, `skipped`) with final alt text and processed timestamp.
+
+Row actions:
+* `Re-queue`
+* `View Image`
+
+Bulk actions:
+* `Re-queue`
 
 === Attachment Details Workflow ===
 In Media Attachment Details, use `Generate Alt Text` for direct generation.
@@ -90,8 +115,7 @@ Behavior:
 * No queue row: image is queued and processed
 * `generated`: suggested alt text is applied
 * `processing`: returns a try-again message
-* `skipped`: automatically requeued and processed
-* `approved` or `rejected`: must be requeued from Queue page
+* `skipped`, `approved`, or `rejected`: automatically requeued and processed
 
 === Access and Permissions ===
 ==== Settings ====
@@ -99,7 +123,7 @@ Behavior:
 
 ==== Queue ====
 * Administrators always have access.
-* Additional roles can be granted queue access in `Settings > Dynamic Alt Tags > Access Control`.
+* Additional roles can be granted queue access in `Settings > Dynamic Alt Tags > Access`.
 
 === Settings Reference ===
 * `Cloudflare Worker URL`
@@ -107,11 +131,17 @@ Behavior:
 * `Batch Size`
 * `Min Confidence`
 * `Use URL Mode - Send Image URL`
-* `Auto-Apply Alt Text for New Uploads`
+* `Auto-Approve New Uploads`
 * `Sync Alt Text to Attachment Title`
+* `Sync Alt Text to Attachment Description`
+* `Search Media Taxonomy`
 * `Overwrite Existing Alt Text`
-* `Require Manual Review`
+* `Require Manual Review for Queue Items`
 * `Keep Data On Delete`
+
+=== Metrics Notes ===
+* `Total images processed` counts unique attachment IDs, not raw processing attempts.
+* If you had older metrics from before unique counting was introduced, use `Reset Metrics` to start a clean baseline.
 
 === Troubleshooting ===
 ==== Provider Test Fails ====
@@ -128,6 +158,10 @@ Behavior:
 * Remote Worker may not be able to fetch local/private URLs.
 * Disable URL mode (use direct upload mode).
 
+==== Plugin Updates ====
+* The plugin supports self-hosted update checks via the hosted `info.json` endpoint.
+* `Dashboard > Updates` can display a native custom plugin icon when an update is available.
+
 === Best Practices ===
 * Start with `Require Manual Review` enabled.
 * Use a conservative `Batch Size` during rollout.
@@ -135,5 +169,13 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 0.1.4 =
+* Add History bulk re-queue workflow.
+* Keep History table layout aligned after adding bulk actions.
+* Count unique attachments in metrics instead of raw processing events.
+* Add Reset Metrics action to the Tools tab.
+* Add self-hosted updater and native update-page plugin icon support.
+* Add PNG fallback icon assets for update UI.
+
 = 0.1.0 =
 * Initial MVP.
