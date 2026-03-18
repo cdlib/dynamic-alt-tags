@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 0.1.5
+Stable tag: 0.1.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -169,6 +169,10 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 0.1.6 =
+* Add WordPress 5.8+ `Update URI` support for self-hosted plugin updates.
+* Keep legacy update transient injection for backward compatibility.
+
 = 0.1.5 =
 * Add History bulk re-queue workflow.
 * Keep History table layout aligned after adding bulk actions.

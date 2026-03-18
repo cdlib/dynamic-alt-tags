@@ -1262,7 +1262,7 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		if ( $queued_after < $queued_before && $failed_after === $failed_before ) {
-			return __( 'No items were processed because claimed queue items were skipped (for example, existing alt text already present).', 'dynamic-alt-tags' );
+			return __( 'No items were processed because claimed queue items were skipped.', 'dynamic-alt-tags' );
 		}
 
 		return __( 'No items were processed. Check queue item status and provider connectivity details.', 'dynamic-alt-tags' );

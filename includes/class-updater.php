@@ -37,20 +37,63 @@ class WPAI_Alt_Text_Updater {
 	}
 
 	/**
+	 * External update hostname.
+	 *
+	 * @var string
+	 */
+	const UPDATE_HOSTNAME = 'satzman.com';
+
+	/**
 	 * Constructor.
 	 */
 	public function __construct() {
-		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'inject_update' ) );
+		add_filter( 'update_plugins_' . self::UPDATE_HOSTNAME, array( $this, 'filter_update' ), 10, 4 );
+		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'inject_legacy_update' ) );
 		add_filter( 'plugins_api', array( $this, 'filter_plugin_information' ), 20, 3 );
 	}
 
 	/**
-	 * Inject update details into the WordPress update transient.
+	 * Provide update details for the plugin Update URI hostname.
+	 *
+	 * @param false|array<string,mixed>|object $update Existing update payload.
+	 * @param array<string,string>             $plugin_data Plugin header data.
+	 * @param string                           $plugin_file Plugin basename.
+	 * @param string[]                         $locales Installed locales.
+	 * @return false|array<string,mixed>|object
+	 */
+	public function filter_update( $update, $plugin_data, $plugin_file, $locales ) {
+		unset( $locales );
+
+		if ( plugin_basename( WPAI_ALT_TEXT_FILE ) !== $plugin_file ) {
+			return $update;
+		}
+
+		$remote_info = $this->get_remote_info();
+		if ( empty( $remote_info['version'] ) || empty( $remote_info['download_url'] ) ) {
+			return $update;
+		}
+
+		return (object) array(
+			'id'           => 'https://satzman.com/plugin-updates/dynamic-alt-tags/',
+			'slug'         => 'dynamic-alt-tags',
+			'version'      => (string) $remote_info['version'],
+			'new_version'  => (string) $remote_info['version'],
+			'url'          => isset( $remote_info['homepage'] ) ? (string) $remote_info['homepage'] : 'https://satzman.com/',
+			'package'      => (string) $remote_info['download_url'],
+			'requires'     => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
+			'tested'       => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',
+			'requires_php' => isset( $remote_info['requires_php'] ) ? (string) $remote_info['requires_php'] : '',
+			'icons'        => $this->get_icon_urls(),
+		);
+	}
+
+	/**
+	 * Inject update details into the WordPress update transient for legacy sites.
 	 *
 	 * @param stdClass|mixed $transient Update transient.
 	 * @return stdClass|mixed
 	 */
-	public function inject_update( $transient ) {
+	public function inject_legacy_update( $transient ) {
 		if ( ! is_object( $transient ) || empty( $transient->checked ) || ! is_array( $transient->checked ) ) {
 			return $transient;
 		}

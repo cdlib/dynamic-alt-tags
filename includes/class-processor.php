@@ -73,7 +73,6 @@ class WPAI_Alt_Text_Processor {
 		$jobs        = $this->queue_repo->claim_jobs( $limit );
 		$processed   = 0;
 		$options     = $this->settings->get_options();
-		$overwrite   = ! empty( $options['overwrite_existing'] );
 		$min_conf    = isset( $options['min_confidence'] ) ? (float) $options['min_confidence'] : 0.7;
 		$need_review = ! empty( $options['require_review'] );
 
@@ -98,12 +97,6 @@ class WPAI_Alt_Text_Processor {
 					$this->queue_repo->mark_final( $row_id, 'skipped', '' );
 					continue;
 				}
-
-			$existing_alt = get_post_meta( $attachment_id, '_wp_attachment_image_alt', true );
-			if ( ! $overwrite && is_string( $existing_alt ) && '' !== trim( $existing_alt ) ) {
-				$this->queue_repo->mark_final( $row_id, 'skipped', '' );
-				continue;
-			}
 
 			$image_url = wp_get_attachment_url( $attachment_id );
 			if ( ! $image_url ) {
@@ -150,7 +143,10 @@ class WPAI_Alt_Text_Processor {
 			$this->queue_repo->mark_generated( $row_id, wp_json_encode( $result ), $alt_text, $confidence );
 
 			if ( ! $need_review && $confidence >= $min_conf ) {
+				update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
 				$this->approve_row( $row_id, $alt_text );
+			} else {
+				update_post_meta( $attachment_id, '_ai_alt_review_required', 1 );
 			}
 
 			$this->record_processing_metric( true, $started_at, $provider_latency_ms, $provider_called, $attachment_id );

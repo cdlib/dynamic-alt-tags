@@ -117,6 +117,10 @@ Go to **Media > Dynamic Alt Tags**.
 - Disable URL mode and use direct upload mode
 
 ## Changelog
+### 0.1.6
+- Add WordPress 5.8+ `Update URI` support for self-hosted plugin updates
+- Keep legacy update transient injection for backward compatibility
+
 ### 0.1.5
 - Add History bulk re-queue workflow
 - Fix History table layout for the new bulk action column
