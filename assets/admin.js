@@ -313,16 +313,8 @@
 			return false;
 		}
 
-		var storedIds = getStoredFocusedQueueIds();
-		if (!storedIds) {
-			return false;
-		}
-
-		url.searchParams.set('page', 'ai-alt-text-queue');
-		url.searchParams.set('view', 'active');
-		url.searchParams.set('queued_ids', storedIds);
-		window.location.replace(url.toString());
-		return true;
+		clearFocusedQueueIds();
+		return false;
 	}
 
 	function hideUploadActionHint(select) {

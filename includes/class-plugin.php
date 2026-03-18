@@ -254,17 +254,7 @@ class WPAI_Alt_Text_Plugin {
 
 		$queued = $this->queue_repo->enqueue( $attachment_id, 0 );
 		if ( $queued ) {
-			$generated_for_review = $this->processor->process_attachment_for_review( $attachment_id );
-			$auto_apply_new = ! empty( $options['auto_apply_new_uploads'] );
-			if ( $generated_for_review && $auto_apply_new ) {
-				$row = $this->queue_repo->get_row_by_attachment( $attachment_id );
-				$row_id = is_array( $row ) && isset( $row['id'] ) ? absint( $row['id'] ) : 0;
-				$status = is_array( $row ) && isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
-				$suggested_alt = is_array( $row ) && isset( $row['suggested_alt'] ) ? sanitize_text_field( (string) $row['suggested_alt'] ) : '';
-				if ( $row_id > 0 && 'generated' === $status && '' !== $suggested_alt ) {
-					$this->processor->approve_row( $row_id, $suggested_alt );
-				}
-			}
+			$this->processor->process_attachment_for_review( $attachment_id );
 		}
 	}
 

@@ -388,13 +388,13 @@ class WPAI_Alt_Text_Settings {
 			if ( 'use_url_mode' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, the plugin sends image URLs and the Worker fetches images remotely. Leave unchecked to use Direct Upload Mode (default, recommended).', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'auto_apply_new_uploads' === $id ) {
-				echo '<p class="description">' . esc_html__( 'When enabled, newly uploaded images are automatically approved and applied after generation. This overrides manual review for brand-new uploads only.', 'dynamic-alt-tags' ) . '</p>';
+				echo '<p class="description">' . esc_html__( 'Reserved for future upload workflow behavior. Newly uploaded images currently stay in the queue after generation until they are approved.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'sync_title_from_alt' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the attachment title to the same value.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'sync_description_from_alt' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, applying alt text will also set the WordPress attachment description to the same value.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'require_review' === $id ) {
-				echo '<p class="description">' . esc_html__( 'When enabled, queue and backfill items stay in Generated status until someone approves them. New uploads can still auto-approve if "Auto-Approve New Uploads" is enabled.', 'dynamic-alt-tags' ) . '</p>';
+				echo '<p class="description">' . esc_html__( 'When enabled, queue, backfill, and newly uploaded items stay in Generated status until someone approves them.', 'dynamic-alt-tags' ) . '</p>';
 			}
 			return;
 		}
