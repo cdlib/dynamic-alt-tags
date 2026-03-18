@@ -761,17 +761,17 @@
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(1),
 .ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(1) {
-	width: 13%;
+	width: 4%;
 }
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(2),
 .ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(2) {
-	width: 7%;
+	width: 13%;
 }
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(3),
 .ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(3) {
-	width: 35%;
+	width: 11%;
 }
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(2),
@@ -786,18 +786,23 @@
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(4),
 .ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(4) {
-	width: 17%;
-	white-space: normal;
+	width: 28%;
 }
 
 .ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(5),
 .ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(5) {
-	width: 28%;
+	width: 17%;
+	white-space: normal;
 }
 
-.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(2),
-.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(5),
-.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(5) .button {
+.ai-alt-queue-page .ai-alt-table[data-view="history"] th:nth-child(6),
+.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(6) {
+	width: 27%;
+}
+
+.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(3),
+.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(6),
+.ai-alt-queue-page .ai-alt-table[data-view="history"] td:nth-child(6) .button {
 	white-space: nowrap;
 }
 
@@ -1215,6 +1220,7 @@
 	}
 
 	.ai-alt-queue-page .ai-alt-table[data-view="active"] th.check-column,
+	.ai-alt-queue-page .ai-alt-table[data-view="history"] th.check-column,
 	.ai-alt-queue-page .ai-alt-table[data-view="active"] td,
 	.ai-alt-queue-page .ai-alt-table[data-view="history"] td,
 	.ai-alt-queue-page .ai-alt-table[data-view="no_alt"] td {
@@ -1225,7 +1231,8 @@
 		border-top: 1px solid #eef2f8;
 	}
 
-	.ai-alt-queue-page .ai-alt-table[data-view="active"] th.check-column {
+	.ai-alt-queue-page .ai-alt-table[data-view="active"] th.check-column,
+	.ai-alt-queue-page .ai-alt-table[data-view="history"] th.check-column {
 		border-top: 0;
 		padding: 0 0 8px;
 		margin: 0;
