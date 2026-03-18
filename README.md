@@ -117,7 +117,7 @@ Go to **Media > Dynamic Alt Tags**.
 - Disable URL mode and use direct upload mode
 
 ## Changelog
-### 0.1.4
+### 0.1.5
 - Add History bulk re-queue workflow
 - Fix History table layout for the new bulk action column
 - Count unique attachments in metrics instead of raw processing events

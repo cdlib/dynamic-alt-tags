@@ -12,7 +12,7 @@ Repository:
 - Plugin directory is the git root.
 
 Current plugin code version:
-- `0.1.4`
+- `0.1.5`
 
 Current git state at handoff update:
 - `main` is the working branch.
@@ -239,7 +239,7 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 
 ### Update endpoints
 - Info JSON: `https://satzman.com/plugin-updates/dynamic-alt-tags/info.json`
-- Package fallback URL constant: `https://satzman.com/plugin-updates/dynamic-alt-tags/dynamic-alt-tags-0.1.4.zip`
+- Package fallback URL constant: `https://satzman.com/plugin-updates/dynamic-alt-tags/dynamic-alt-tags-0.1.5.zip`
 
 ### Updater behavior
 - Hooks:

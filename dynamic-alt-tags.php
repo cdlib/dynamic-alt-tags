@@ -3,7 +3,7 @@
  * Plugin Name:       Dynamic Alt Tags
  * Plugin URI:        https://github.com/ericsatzman/dynamic-alt-tags
  * Description:       Generate and manage AI-suggested alt text for WordPress images.
- * Version:           0.1.4
+ * Version:           0.1.5
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            Eric Satzman
@@ -18,14 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'WPAI_ALT_TEXT_VERSION', '0.1.4' );
+define( 'WPAI_ALT_TEXT_VERSION', '0.1.5' );
 define( 'WPAI_ALT_TEXT_FILE', __FILE__ );
 define( 'WPAI_ALT_TEXT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_CRON_HOOK', 'ai_alt_text_process_queue' );
 define( 'WPAI_ALT_TEXT_QUEUE_CAP', 'ai_alt_manage_queue' );
 define( 'WPAI_ALT_TEXT_UPDATE_INFO_URL', 'https://satzman.com/plugin-updates/dynamic-alt-tags/info.json' );
-define( 'WPAI_ALT_TEXT_UPDATE_PACKAGE_URL', 'https://satzman.com/plugin-updates/dynamic-alt-tags/dynamic-alt-tags-0.1.4.zip' );
+define( 'WPAI_ALT_TEXT_UPDATE_PACKAGE_URL', 'https://satzman.com/plugin-updates/dynamic-alt-tags/dynamic-alt-tags-0.1.5.zip' );
 
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-activator.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-plugin.php';

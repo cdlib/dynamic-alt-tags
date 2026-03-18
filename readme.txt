@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 0.1.4
+Stable tag: 0.1.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -169,7 +169,7 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
-= 0.1.4 =
+= 0.1.5 =
 * Add History bulk re-queue workflow.
 * Keep History table layout aligned after adding bulk actions.
 * Count unique attachments in metrics instead of raw processing events.
