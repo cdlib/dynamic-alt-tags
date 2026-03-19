@@ -765,17 +765,53 @@ class WPAI_Alt_Text_Admin {
 			return array();
 		}
 
-		$options = array();
+		usort(
+			$terms,
+			static function ( $left, $right ) {
+				if ( ! ( $left instanceof WP_Term ) || ! ( $right instanceof WP_Term ) ) {
+					return 0;
+				}
+
+				return strcasecmp( (string) $left->name, (string) $right->name );
+			}
+		);
+
+		$terms_by_parent = array();
 		foreach ( $terms as $term ) {
 			if ( ! ( $term instanceof WP_Term ) ) {
 				continue;
 			}
 
-			$options[] = array(
-				'value' => (int) $term->term_id,
-				'label' => (string) $term->name,
-			);
+			$parent_id = max( 0, (int) $term->parent );
+			if ( ! isset( $terms_by_parent[ $parent_id ] ) ) {
+				$terms_by_parent[ $parent_id ] = array();
+			}
+
+			$terms_by_parent[ $parent_id ][] = $term;
 		}
+
+		$options = array();
+		$append_term_option = static function ( $parent_id, $depth ) use ( &$append_term_option, &$options, $terms_by_parent ) {
+			if ( empty( $terms_by_parent[ $parent_id ] ) ) {
+				return;
+			}
+
+			foreach ( $terms_by_parent[ $parent_id ] as $term ) {
+				if ( ! ( $term instanceof WP_Term ) ) {
+					continue;
+				}
+
+				$prefix = $depth > 0 ? str_repeat( '- ', $depth ) : '';
+				$options[] = array(
+					'value' => (int) $term->term_id,
+					'label' => $prefix . (string) $term->name,
+				);
+
+				$append_term_option( (int) $term->term_id, $depth + 1 );
+			}
+		};
+
+		$append_term_option( 0, 0 );
 
 		return $options;
 	}
