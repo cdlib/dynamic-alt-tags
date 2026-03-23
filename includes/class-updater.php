@@ -19,6 +19,20 @@ class WPAI_Alt_Text_Updater {
 	const REMOTE_INFO_TRANSIENT_KEY = 'wpai_alt_text_update_info';
 
 	/**
+	 * Allowed update package host.
+	 *
+	 * @var string
+	 */
+	const UPDATE_PACKAGE_HOST = 'satzman.com';
+
+	/**
+	 * Allowed update package path prefix.
+	 *
+	 * @var string
+	 */
+	const UPDATE_PACKAGE_PATH_PREFIX = '/plugin-updates/dynamic-alt-tags/';
+
+	/**
 	 * Get icon URLs for update UI.
 	 *
 	 * @return array<string,string>
@@ -204,10 +218,15 @@ class WPAI_Alt_Text_Updater {
 			return array();
 		}
 
+		$download_url = isset( $decoded['download_url'] ) ? esc_url_raw( (string) $decoded['download_url'] ) : WPAI_ALT_TEXT_UPDATE_PACKAGE_URL;
+		if ( ! $this->is_allowed_update_url( $download_url ) ) {
+			$download_url = WPAI_ALT_TEXT_UPDATE_PACKAGE_URL;
+		}
+
 		$remote_info = array(
 			'name'          => isset( $decoded['name'] ) ? sanitize_text_field( (string) $decoded['name'] ) : 'Dynamic Alt Tags',
 			'version'       => isset( $decoded['version'] ) ? sanitize_text_field( (string) $decoded['version'] ) : '',
-			'download_url'  => isset( $decoded['download_url'] ) ? esc_url_raw( (string) $decoded['download_url'] ) : WPAI_ALT_TEXT_UPDATE_PACKAGE_URL,
+			'download_url'  => $download_url,
 			'homepage'      => isset( $decoded['homepage'] ) ? esc_url_raw( (string) $decoded['homepage'] ) : 'https://satzman.com/',
 			'requires'      => isset( $decoded['requires'] ) ? sanitize_text_field( (string) $decoded['requires'] ) : '',
 			'tested'        => isset( $decoded['tested'] ) ? sanitize_text_field( (string) $decoded['tested'] ) : '',
@@ -219,6 +238,34 @@ class WPAI_Alt_Text_Updater {
 		set_site_transient( self::REMOTE_INFO_TRANSIENT_KEY, $remote_info, 6 * HOUR_IN_SECONDS );
 
 		return $remote_info;
+	}
+
+	/**
+	 * Whether the remote update package URL matches the expected host and path.
+	 *
+	 * @param string $url Candidate update URL.
+	 * @return bool
+	 */
+	private function is_allowed_update_url( $url ) {
+		$url = esc_url_raw( (string) $url );
+		if ( '' === $url ) {
+			return false;
+		}
+
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) ) {
+			return false;
+		}
+
+		$scheme = isset( $parts['scheme'] ) ? strtolower( (string) $parts['scheme'] ) : '';
+		$host   = isset( $parts['host'] ) ? strtolower( (string) $parts['host'] ) : '';
+		$path   = isset( $parts['path'] ) ? (string) $parts['path'] : '';
+
+		if ( 'https' !== $scheme || self::UPDATE_PACKAGE_HOST !== $host ) {
+			return false;
+		}
+
+		return 0 === strpos( $path, self::UPDATE_PACKAGE_PATH_PREFIX );
 	}
 
 	/**

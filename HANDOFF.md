@@ -19,19 +19,19 @@ Current git state at handoff update:
 - Hand this off by first re-running `git status -sb` because the exact cleanliness depends on whether newer local work has happened after this file was updated.
 
 Latest code commit before this handoff refresh:
-- `14888fc` - Add history bulk requeue support
+- `c3d2631` - Show category hierarchy in search filter
 
 Recent commits (newest first):
-1. `14888fc` Add history bulk requeue support
-2. `7684fed` Add plugin icon fallback assets
-3. `b570cda` Use native update icon metadata
-4. `c75f167` Count unique attachments in metrics
-5. `13aef98` Add metrics reset action to tools tab
-6. `5be5f2b` Refine active queue focus and queued processing
-7. `5515590` Update handoff for queue and search workflow
-8. `57b5458` Add generate-all action for active queue
-9. `ccb71da` Sanitize focused queue request params
-10. `efac47c` Add bulk queue selection to search
+1. `c3d2631` Show category hierarchy in search filter
+2. `893688f` Keep uploaded images visible in active queue
+3. `5f3e504` Modernize updater and preserve queue review flow
+4. `f6d4461` Bump version to 0.1.5
+5. `45a92c0` Refresh readme and handoff docs
+6. `14888fc` Add history bulk requeue support
+7. `7684fed` Add plugin icon fallback assets
+8. `b570cda` Use native update icon metadata
+9. `c75f167` Count unique attachments in metrics
+10. `13aef98` Add metrics reset action to tools tab
 
 ## 2) Menus and Navigation
 ### Settings menu
@@ -187,6 +187,7 @@ Notes:
 - Optional filters appear only when available:
   - configured attachment taxonomy / detected `media_category`
   - FileBird Lite folder filter
+- Category dropdown labels now indicate parent/child hierarchy using prefixed indentation.
 - Search input is live/debounced.
 - Search clear button has explicit focus styling and larger target size.
 - `Load More Images` appends results via AJAX.
@@ -199,7 +200,7 @@ Notes:
 
 ### Focused Active Queue behavior
 - After bulk add from Search, Active Queue can focus on the newly queued items first.
-- This focused queue state is persisted client-side so navigating away and returning to Active Queue keeps those items highlighted until the user expands to older items.
+- Focused queue state is only applied when `queued_ids` is present in the URL; stale client-side focused state is cleared instead of auto-restoring on unrelated queue visits.
 - Clicking `View more images` clears the focused subset and reveals the broader queue list.
 
 ### Queue Dashboard
@@ -243,9 +244,12 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 
 ### Updater behavior
 - Hooks:
+  - `update_plugins_satzman.com`
   - `pre_set_site_transient_update_plugins`
   - `plugins_api`
+- Main plugin header now includes `Update URI: https://satzman.com/plugin-updates/dynamic-alt-tags/`.
 - Native update metadata includes icon URLs so WordPress core can render the plugin icon on `Dashboard > Updates`.
+- Remote update JSON `download_url` is now allowlisted to `https://satzman.com/plugin-updates/dynamic-alt-tags/...`; unexpected hosts/paths fall back to the package URL constant.
 - No Installed Plugins-page icon hack remains; that was intentionally removed.
 
 ### Icon assets
@@ -299,6 +303,8 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 4. Media modal behavior depends on WordPress media-frame internals and can still be sensitive to admin/plugin conflicts.
 5. FileBird integration depends on FileBird Lite table structure rather than WordPress taxonomy APIs.
 6. Existing installs still need an updater-enabled build installed once before future self-hosted updates can appear automatically.
+7. Queue/search/history read access is still broader than per-attachment `edit_post`; non-admin queue-enabled users can currently see media rows they may not be able to edit.
+8. Updater package URLs are now host/path allowlisted, but there is still no checksum/signature verification of remote metadata or ZIPs.
 
 ## 13) Suggested Next Steps
 1. Add integration tests for:
@@ -309,6 +315,12 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 2. Add automated accessibility checks for settings tabs, queue controls, and stacked table views.
 3. Add provider health visibility in admin (status plus recent failure trend).
 4. Keep hosted `info.json` / package URLs aligned with future version bumps.
+5. Security follow-up for updater hardening (P1):
+   - keep package downloads restricted to the expected `satzman.com` host/path
+   - add checksum and signature fields to hosted metadata for release verification
+6. Security follow-up for queue visibility (P2):
+   - enforce per-attachment read filtering for non-admin queue users across Search, Active Queue, History, and related AJAX endpoints
+   - prefer SQL-level filtering where practical, with PHP fallback if exact capability mapping is too expensive
 
 ## 14) Resume Checklist For A New Codex Window
 1. Confirm status:
@@ -337,3 +349,4 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 - Media modal sync issues: inspect `assets/admin.js`
 - Update icon/update availability issues: inspect `includes/class-updater.php` plus hosted `info.json`
 - History layout issues: inspect `admin/views-page-queue.php` and `assets/admin.css`
+- Upload-to-queue visibility issues: inspect `includes/class-plugin.php` (`maybe_queue_attachment`) and `assets/admin.js` focused-queue persistence
