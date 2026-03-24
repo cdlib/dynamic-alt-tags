@@ -43,6 +43,49 @@ This project is usable and actively maintained.
 - A Cloudflare account with Workers enabled
 - Optional shared secret token between WordPress and the Worker
 
+## Dependencies
+
+### Development dependencies
+
+The repository currently uses Composer for development tooling only. Runtime plugin code does not depend on Composer packages.
+
+- `dealerdirect/phpcodesniffer-composer-installer`
+- `phpcompatibility/phpcompatibility-wp`
+- `squizlabs/php_codesniffer`
+- `wp-coding-standards/wpcs`
+
+Installed transitive development packages include:
+
+- `phpcompatibility/php-compatibility`
+- `phpcompatibility/phpcompatibility-paragonie`
+- `phpcsstandards/phpcsextra`
+- `phpcsstandards/phpcsutils`
+
+### CI dependencies
+
+GitHub Actions currently runs:
+
+- `actions/checkout@v4`
+- `shivammathur/setup-php@v2`
+- PHP `8.2`
+- Composer `v2`
+
+### Runtime dependencies
+
+The plugin itself depends on:
+
+- WordPress `6.2+`
+- PHP `7.4+`
+- A reachable Cloudflare Worker endpoint
+- Optional Cloudflare Worker token authentication
+
+### Optional integrations
+
+Some functionality becomes available only when these are present:
+
+- FileBird Lite, for folder filtering in Search
+- A media taxonomy such as `media_category`, for taxonomy-based media filtering
+
 ## Install the Plugin
 
 1. Copy this repo into `wp-content/plugins/dynamic-alt-tags`.
