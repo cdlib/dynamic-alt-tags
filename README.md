@@ -60,6 +60,7 @@ A free Cloudflare account can be used but a paid plan may be required depending 
 3. Add a shared token if your Worker requires authentication.
 4. Choose URL mode or direct upload mode.
 5. Use **Run Backfill** or queue items from the Search tab.
+6. Open the **Active Queue** page to review suggested alt text before approving it.
 
 ## Cloudflare Setup
 
