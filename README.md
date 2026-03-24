@@ -140,6 +140,10 @@ Pull requests are welcome. For setup, contribution expectations, and testing gui
 
 Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 
+## License
+
+Dynamic Alt Tags is released under the `GPL-2.0-or-later` license. See [`LICENSE`](LICENSE).
+
 ## Additional Docs
 
 - [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md)
