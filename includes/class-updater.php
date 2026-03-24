@@ -71,6 +71,43 @@ class WPAI_Alt_Text_Updater {
 		add_filter( 'update_plugins_' . self::UPDATE_HOSTNAME, array( $this, 'filter_update' ), 10, 4 );
 		add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'inject_legacy_update' ) );
 		add_filter( 'plugins_api', array( $this, 'filter_plugin_information' ), 20, 3 );
+		add_filter( 'plugin_row_meta', array( $this, 'filter_plugin_row_meta' ), 20, 4 );
+	}
+
+	/**
+	 * Replace the Installed Plugins "View details" link with the repository URL.
+	 *
+	 * @param string[] $plugin_meta Plugin row meta links.
+	 * @param string   $plugin_file Plugin basename.
+	 * @param array    $plugin_data Plugin data.
+	 * @param string   $status Current plugin list status.
+	 * @return string[]
+	 */
+	public function filter_plugin_row_meta( $plugin_meta, $plugin_file, $plugin_data, $status ) {
+		unset( $plugin_data, $status );
+
+		if ( plugin_basename( WPAI_ALT_TEXT_FILE ) !== $plugin_file || ! is_array( $plugin_meta ) ) {
+			return $plugin_meta;
+		}
+
+		$filtered_meta = array();
+		foreach ( $plugin_meta as $meta_item ) {
+			$meta_item = (string) $meta_item;
+			if ( false !== strpos( $meta_item, 'open-plugin-details-modal' ) || false !== strpos( $meta_item, __( 'View details' ) ) ) {
+				continue;
+			}
+
+			$filtered_meta[] = $meta_item;
+		}
+
+		$filtered_meta[] = sprintf(
+			'<a href="%1$s" aria-label="%2$s" target="_blank" rel="noopener noreferrer">%3$s</a>',
+			esc_url( self::REPOSITORY_URL ),
+			esc_attr( sprintf( __( 'View details for %s on GitHub', 'dynamic-alt-tags' ), 'Dynamic Alt Tags' ) ),
+			esc_html__( 'View details', 'dynamic-alt-tags' )
+		);
+
+		return $filtered_meta;
 	}
 
 	/**
