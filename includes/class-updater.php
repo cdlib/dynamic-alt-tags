@@ -33,6 +33,13 @@ class WPAI_Alt_Text_Updater {
 	const UPDATE_PACKAGE_PATH_PREFIX = '/plugin-updates/dynamic-alt-tags/';
 
 	/**
+	 * Canonical repository URL shown in WordPress plugin UI.
+	 *
+	 * @var string
+	 */
+	const REPOSITORY_URL = 'https://github.com/ericsatzman/dynamic-alt-tags';
+
+	/**
 	 * Get icon URLs for update UI.
 	 *
 	 * @return array<string,string>
@@ -92,7 +99,7 @@ class WPAI_Alt_Text_Updater {
 			'slug'         => 'dynamic-alt-tags',
 			'version'      => (string) $remote_info['version'],
 			'new_version'  => (string) $remote_info['version'],
-			'url'          => isset( $remote_info['homepage'] ) ? (string) $remote_info['homepage'] : 'https://satzman.com/',
+			'url'          => self::REPOSITORY_URL,
 			'package'      => (string) $remote_info['download_url'],
 			'requires'     => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
 			'tested'       => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',
@@ -134,7 +141,7 @@ class WPAI_Alt_Text_Updater {
 			'plugin'       => $plugin_file,
 			'new_version'  => $remote_version,
 			'package'      => (string) $remote_info['download_url'],
-			'url'          => isset( $remote_info['homepage'] ) ? (string) $remote_info['homepage'] : 'https://satzman.com/',
+			'url'          => self::REPOSITORY_URL,
 			'requires'     => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
 			'tested'       => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',
 			'requires_php' => isset( $remote_info['requires_php'] ) ? (string) $remote_info['requires_php'] : '',
@@ -172,7 +179,7 @@ class WPAI_Alt_Text_Updater {
 			'slug'          => 'dynamic-alt-tags',
 			'version'       => (string) $remote_info['version'],
 			'author'        => '<a href="https://satzman.com/">Eric Satzman</a>',
-			'homepage'      => isset( $remote_info['homepage'] ) ? (string) $remote_info['homepage'] : 'https://satzman.com/',
+			'homepage'      => self::REPOSITORY_URL,
 			'requires'      => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
 			'tested'        => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',
 			'requires_php'  => isset( $remote_info['requires_php'] ) ? (string) $remote_info['requires_php'] : '',
@@ -227,7 +234,7 @@ class WPAI_Alt_Text_Updater {
 			'name'          => isset( $decoded['name'] ) ? sanitize_text_field( (string) $decoded['name'] ) : 'Dynamic Alt Tags',
 			'version'       => isset( $decoded['version'] ) ? sanitize_text_field( (string) $decoded['version'] ) : '',
 			'download_url'  => $download_url,
-			'homepage'      => isset( $decoded['homepage'] ) ? esc_url_raw( (string) $decoded['homepage'] ) : 'https://satzman.com/',
+			'homepage'      => self::REPOSITORY_URL,
 			'requires'      => isset( $decoded['requires'] ) ? sanitize_text_field( (string) $decoded['requires'] ) : '',
 			'tested'        => isset( $decoded['tested'] ) ? sanitize_text_field( (string) $decoded['tested'] ) : '',
 			'requires_php'  => isset( $decoded['requires_php'] ) ? sanitize_text_field( (string) $decoded['requires_php'] ) : '',
