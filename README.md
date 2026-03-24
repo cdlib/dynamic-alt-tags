@@ -43,6 +43,8 @@ This project is usable and actively maintained.
 - A Cloudflare account with Workers enabled
 - Optional shared secret token between WordPress and the Worker
 
+A free Cloudflare account can be enough for testing or smaller media libraries, but a paid plan may be required depending on how many images you process and how often you run generation jobs.
+
 ## Dependencies
 
 ### Development dependencies
