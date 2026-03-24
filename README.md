@@ -117,6 +117,11 @@ Go to **Media > Dynamic Alt Tags**.
 - Disable URL mode and use direct upload mode
 
 ## Changelog
+### 1.0.1
+- Prepare the first stable 1.0.x release of Dynamic Alt Tags
+- Refresh documentation for current queue, access, metrics, and self-hosted update workflows
+- Align self-hosted updater package metadata with the 1.0.1 release build
+
 ### 0.1.6
 - Add WordPress 5.8+ `Update URI` support for self-hosted plugin updates
 - Keep legacy update transient injection for backward compatibility

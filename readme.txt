@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 0.1.6
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -169,6 +169,11 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.0.1 =
+* Prepare the first stable 1.0.x release of Dynamic Alt Tags.
+* Document current queue, access, metrics, and self-hosted update workflows.
+* Keep self-hosted updater package metadata aligned with the 1.0.1 release build.
+
 = 0.1.6 =
 * Add WordPress 5.8+ `Update URI` support for self-hosted plugin updates.
 * Keep legacy update transient injection for backward compatibility.
