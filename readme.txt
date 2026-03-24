@@ -5,8 +5,8 @@ Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
 Stable tag: 1.0.1
-License: MIT
-License URI: https://opensource.org/licenses/MIT
+License: GPLv2 or later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Generate and manage AI-suggested alt text for WordPress images using a Cloudflare Worker endpoint.
 
