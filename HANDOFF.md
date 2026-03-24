@@ -19,19 +19,19 @@ Current git state at handoff update:
 - Hand this off by first re-running `git status -sb` because the exact cleanliness depends on whether newer local work has happened after this file was updated.
 
 Latest code commit before this handoff refresh:
-- `c3d2631` - Show category hierarchy in search filter
+- `e296faf` - Document security follow-ups and harden updater URL trust
 
 Recent commits (newest first):
-1. `c3d2631` Show category hierarchy in search filter
-2. `893688f` Keep uploaded images visible in active queue
-3. `5f3e504` Modernize updater and preserve queue review flow
-4. `f6d4461` Bump version to 0.1.5
-5. `45a92c0` Refresh readme and handoff docs
-6. `14888fc` Add history bulk requeue support
-7. `7684fed` Add plugin icon fallback assets
-8. `b570cda` Use native update icon metadata
-9. `c75f167` Count unique attachments in metrics
-10. `13aef98` Add metrics reset action to tools tab
+1. `e296faf` Document security follow-ups and harden updater URL trust
+2. `c3d2631` Show category hierarchy in search filter
+3. `893688f` Keep uploaded images visible in active queue
+4. `5f3e504` Modernize updater and preserve queue review flow
+5. `f6d4461` Bump version to 0.1.5
+6. `45a92c0` Refresh readme and handoff docs
+7. `14888fc` Add history bulk requeue support
+8. `7684fed` Add plugin icon fallback assets
+9. `b570cda` Use native update icon metadata
+10. `c75f167` Count unique attachments in metrics
 
 ## 2) Menus and Navigation
 ### Settings menu
@@ -336,7 +336,7 @@ Self-hosted updater is implemented in `includes/class-updater.php`.
 - Tools tab `Reset Metrics` works and returns to the Tools tab.
 - Metrics tab `Reset Metrics` works and returns to the Metrics tab.
 - Active Queue `Generate Alt Text For Queued` stays disabled unless queued rows are visible.
-- Active Queue focused queue state persists after leaving and returning to Active Queue.
+- Active Queue focused queue state only appears when `queued_ids` is present in the URL, and unrelated queue visits clear stale focused state.
 - Search bulk-select + shift-click + Add to Queue still works.
 - `View more images` clears focused queue state and reveals older rows.
 - History page row `Re-queue` still works.
