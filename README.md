@@ -1,14 +1,14 @@
 # Dynamic Alt Tags
 
-Dynamic Alt Tags is a WordPress plugin for generating, reviewing, and applying AI-suggested alt text through a Cloudflare Worker.
+Dynamic Alt Tags is an open source WordPress plugin for generating, reviewing, and applying AI-suggested alt text through a Cloudflare Worker.
 
 It is currently owner-maintained by [Eric Satzman](https://github.com/ericsatzman). Pull requests are welcome, but releases and review cycles may be infrequent.
 
 ## Why this project exists
 
-The goal is to automate the process of generating and managing AI-suggested alt text for WordPress images.
+To automate the process of generating and managing AI-suggested alt text for WordPress images.
 
-That means:
+This includes:
 
 - queue-based generation instead of one-off prompts only
 - human review before approval when you want it
