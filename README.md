@@ -99,7 +99,7 @@ Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 - [`SECURITY.md`](SECURITY.md)
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
-## WordPress Workflow
+## How to Use
 
 ### Queue Workflow
 
