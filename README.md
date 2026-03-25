@@ -13,14 +13,13 @@ This project is open source under the `GPL-2.0-or-later` license. See [`LICENSE`
 - Queue-based processing for media library images
 - Search tab with live filters, taxonomy filtering, and bulk queue add
 - Active Queue review workflow with approve, skip, and generate actions
-- History bulk `Re-queue` support
-- Attachment Details button for one-off generation
 - Human review before approval when you want it
 - Per-image actions directly inside WordPress media workflows
 - Support for self-hosted infrastructure
 - Optional title and description sync
 - Live metrics with reset tools
-- Self-hosted plugin updates with native WordPress update icon metadata
+- History bulk `Re-queue` support
+- Self-hosted plugin updates
 
 ## Getting Started
 
