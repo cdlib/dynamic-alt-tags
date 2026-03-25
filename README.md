@@ -8,6 +8,20 @@ It is currently owner-maintained by [Eric Satzman](https://github.com/ericsatzma
 
 This project is open source under the `GPL-2.0-or-later` license. See [`LICENSE`](LICENSE) for the full text.
 
+## Features
+
+- Queue-based processing for media library images
+- Search tab with live filters, taxonomy filtering, and bulk queue add
+- Active Queue review workflow with approve, skip, and generate actions
+- History bulk `Re-queue` support
+- Attachment Details button for one-off generation
+- Human review before approval when you want it
+- Per-image actions directly inside WordPress media workflows
+- Support for self-hosted infrastructure
+- Optional title and description sync
+- Live metrics with reset tools
+- Self-hosted plugin updates with native WordPress update icon metadata
+
 ## Getting Started
 
 ### Requirements
@@ -50,28 +64,6 @@ Short version:
 5. Paste the Worker URL into WordPress plugin settings.
 
 For the full setup guide, sample Worker code, request/response contract, and URL mode vs direct upload details, see [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md).
-
-## Features
-
-- Queue-based processing for media library images
-- Search tab with live filters, taxonomy filtering, and bulk queue add
-- Active Queue review workflow with approve, skip, and generate actions
-- History bulk `Re-queue` support
-- Attachment Details button for one-off generation
-- Optional title and description sync
-- Live metrics with reset tools
-- Self-hosted plugin updates with native WordPress update icon metadata
-
-## Why this project exists
-
-To automate the process of generating and managing AI-suggested alt text for WordPress images.
-
-This includes:
-
-- queue-based generation instead of one-off prompts only
-- human review before approval when you want it
-- per-image actions directly inside WordPress media workflows
-- support for self-hosted infrastructure instead of a locked SaaS backend
 
 ## Project Status
 
