@@ -83,6 +83,22 @@ This project is usable and actively maintained.
 
 Developer tooling is Composer-based and currently includes PHPCS, WPCS, and PHP compatibility checks.
 
+## Contributing
+
+Pull requests are welcome. For setup, contribution expectations, and testing guidance, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+## Security
+
+Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
+
+## Additional Docs
+
+- [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md)
+- [`docs/troubleshooting.md`](docs/troubleshooting.md)
+- [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- [`SECURITY.md`](SECURITY.md)
+- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+
 ## WordPress Workflow
 
 ### Queue Workflow
@@ -115,53 +131,6 @@ Go to **Media > Dynamic Alt Tags**.
 - `generated`: suggested alt text is applied
 - `processing`: try-again message is shown
 - `skipped`, `approved`, `rejected`: automatically requeued and processed
-
-## Configuration
-
-Main settings include:
-
-- Cloudflare Worker URL
-- Cloudflare API Token
-- Batch Size
-- Min Confidence
-- URL mode or direct upload mode
-- Auto-approve and review settings
-- Optional title and description sync
-- Queue access by role
-
-## Contributing
-
-Pull requests are welcome. For setup, contribution expectations, and testing guidance, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
-
-## Security
-
-Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
-
-## Additional Docs
-
-- [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md)
-- [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- [`SECURITY.md`](SECURITY.md)
-- [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
-
-## Troubleshooting
-
-### Provider test fails
-
-- Verify the Worker URL and token
-- Verify the WordPress host can reach the Worker
-- Re-run `Test Provider Connection`
-
-### Queue does not process
-
-- Check whether items are already `generated` and waiting for review
-- Verify provider/network availability
-- Try processing a single row first
-
-### URL mode fails on local/private sites
-
-- The Worker may not be able to fetch private media URLs
-- Disable URL mode and use direct upload mode
 
 ## Changelog
 
