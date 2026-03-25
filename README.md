@@ -8,38 +8,9 @@ It is currently owner-maintained by [Eric Satzman](https://github.com/ericsatzma
 
 This project is open source under the `GPL-2.0-or-later` license. See [`LICENSE`](LICENSE) for the full text.
 
-## Why this project exists
+## Getting Started
 
-To automate the process of generating and managing AI-suggested alt text for WordPress images.
-
-This includes:
-
-- queue-based generation instead of one-off prompts only
-- human review before approval when you want it
-- per-image actions directly inside WordPress media workflows
-- support for self-hosted infrastructure instead of a locked SaaS backend
-
-## Highlights
-
-- Queue-based processing for media library images
-- Search tab with live filters, taxonomy filtering, and bulk queue add
-- Active Queue review workflow with approve, skip, and generate actions
-- History bulk `Re-queue` support
-- Attachment Details button for one-off generation
-- Optional title and description sync
-- Live metrics with reset tools
-- Self-hosted plugin updates with native WordPress update icon metadata
-
-## Project Status
-
-This project is usable and actively maintained.
-
-- The maintainer remains the project owner and final decision-maker for scope and releases.
-- Pull requests are welcome for added functionality, bug fixes, security fixes, accessibility improvements, tests, and documentation.
-- Large feature work should start with an issue or discussion before code is written.
-- Response times may be slow during busy periods.
-
-## Requirements
+### Requirements
 
 - WordPress `6.2+`
 - PHP `7.4+`
@@ -49,7 +20,7 @@ This project is usable and actively maintained.
 
 A free Cloudflare account can be used but a paid plan may be required depending on how many images you process.
 
-## Install the Plugin
+### Install the Plugin
 
 1. Copy this repo into `wp-content/plugins/dynamic-alt-tags`.
 2. Activate **Dynamic Alt Tags** in WordPress.
@@ -57,7 +28,7 @@ A free Cloudflare account can be used but a paid plan may be required depending 
 4. Configure the Cloudflare Worker URL and optional token.
 5. Click **Test Provider Connection**.
 
-## Quick Start
+### Quick Start
 
 1. Set up and deploy a Cloudflare Worker.
 2. Paste the Worker URL into **Settings > Dynamic Alt Tags**.
@@ -66,7 +37,7 @@ A free Cloudflare account can be used but a paid plan may be required depending 
 5. Use **Run Backfill** or queue items from the Search tab.
 6. Open the **Active Queue** page to review suggested alt text before approving it.
 
-## Cloudflare Setup
+### Cloudflare Setup
 
 The plugin expects a Cloudflare Worker that accepts a JSON `POST` request and returns JSON with `alt_text` or `caption`.
 
@@ -79,6 +50,37 @@ Short version:
 5. Paste the Worker URL into WordPress plugin settings.
 
 For the full setup guide, sample Worker code, request/response contract, and URL mode vs direct upload details, see [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md).
+
+## Features
+
+- Queue-based processing for media library images
+- Search tab with live filters, taxonomy filtering, and bulk queue add
+- Active Queue review workflow with approve, skip, and generate actions
+- History bulk `Re-queue` support
+- Attachment Details button for one-off generation
+- Optional title and description sync
+- Live metrics with reset tools
+- Self-hosted plugin updates with native WordPress update icon metadata
+
+## Why this project exists
+
+To automate the process of generating and managing AI-suggested alt text for WordPress images.
+
+This includes:
+
+- queue-based generation instead of one-off prompts only
+- human review before approval when you want it
+- per-image actions directly inside WordPress media workflows
+- support for self-hosted infrastructure instead of a locked SaaS backend
+
+## Project Status
+
+This project is usable and actively maintained.
+
+- The maintainer remains the project owner and final decision-maker for scope and releases.
+- Pull requests are welcome for added functionality, bug fixes, security fixes, accessibility improvements, tests, and documentation.
+- Large feature work should start with an issue or discussion before code is written.
+- Response times may be slow during busy periods.
 
 ## Development
 
