@@ -6,7 +6,7 @@ It is currently owner-maintained by [Eric Satzman](https://github.com/ericsatzma
 
 ## Open Source
 
-This project is open source under the `GPL-2.0-or-later` license. See [`LICENSE`](LICENSE) for the full text.
+This project is open source under the `MIT` license. See [`LICENSE`](LICENSE) for the full text.
 
 ## Features
 
