@@ -23,14 +23,14 @@ class WPAI_Alt_Text_Updater {
 	 *
 	 * @var string
 	 */
-	const UPDATE_PACKAGE_HOST = 'satzman.com';
+	const UPDATE_PACKAGE_HOST = 'cdlib.org';
 
 	/**
 	 * Allowed update package path prefix.
 	 *
 	 * @var string
 	 */
-	const UPDATE_PACKAGE_PATH_PREFIX = '/plugin-updates/dynamic-alt-tags/';
+	const UPDATE_PACKAGE_PATH_PREFIX = '/services-groups/webprod/plugins/dynamic-alt-tags/';
 
 	/**
 	 * Canonical repository URL shown in WordPress plugin UI.
@@ -62,7 +62,7 @@ class WPAI_Alt_Text_Updater {
 	 *
 	 * @var string
 	 */
-	const UPDATE_HOSTNAME = 'satzman.com';
+	const UPDATE_HOSTNAME = 'cdlib.org';
 
 	/**
 	 * Constructor.
@@ -132,7 +132,7 @@ class WPAI_Alt_Text_Updater {
 		}
 
 		return (object) array(
-			'id'           => 'https://satzman.com/plugin-updates/dynamic-alt-tags/',
+			'id'           => 'https://cdlib.org/services-groups/webprod/plugins/dynamic-alt-tags/',
 			'slug'         => 'dynamic-alt-tags',
 			'version'      => (string) $remote_info['version'],
 			'new_version'  => (string) $remote_info['version'],
@@ -215,7 +215,7 @@ class WPAI_Alt_Text_Updater {
 			'name'          => isset( $remote_info['name'] ) ? (string) $remote_info['name'] : 'Dynamic Alt Tags',
 			'slug'          => 'dynamic-alt-tags',
 			'version'       => (string) $remote_info['version'],
-			'author'        => '<a href="https://satzman.com/">Eric Satzman</a>',
+			'author'        => '<a href="https://cdlib.org/services-groups/webprod/">California Digital Library</a>',
 			'homepage'      => self::REPOSITORY_URL,
 			'requires'      => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
 			'tested'        => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',

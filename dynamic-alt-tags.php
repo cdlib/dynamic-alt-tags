@@ -10,7 +10,7 @@
  * Author URI:        mailto:esatzman@ucop.edu
  * Text Domain:       dynamic-alt-tags
  * Domain Path:       /languages
- * Update URI:        https://satzman.com/plugin-updates/dynamic-alt-tags/
+ * Update URI:        https://cdlib.org/services-groups/webprod/plugins/dynamic-alt-tags/
  *
  * @package WPAIAltText
  */
@@ -25,8 +25,8 @@ define( 'WPAI_ALT_TEXT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPAI_ALT_TEXT_CRON_HOOK', 'ai_alt_text_process_queue' );
 define( 'WPAI_ALT_TEXT_QUEUE_CAP', 'ai_alt_manage_queue' );
-define( 'WPAI_ALT_TEXT_UPDATE_INFO_URL', 'https://satzman.com/plugin-updates/dynamic-alt-tags/info.json' );
-define( 'WPAI_ALT_TEXT_UPDATE_PACKAGE_URL', 'https://satzman.com/plugin-updates/dynamic-alt-tags/dynamic-alt-tags-1.0.1.zip' );
+define( 'WPAI_ALT_TEXT_UPDATE_INFO_URL', 'https://cdlib.org/services-groups/webprod/plugins/dynamic-alt-tags/info.json' );
+define( 'WPAI_ALT_TEXT_UPDATE_PACKAGE_URL', 'https://cdlib.org/services-groups/webprod/plugins/dynamic-alt-tags/dynamic-alt-tags-1.0.1.zip' );
 
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-activator.php';
 require_once WPAI_ALT_TEXT_DIR . 'includes/class-plugin.php';
