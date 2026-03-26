@@ -251,8 +251,6 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 		<div id="ai-alt-settings-panel-tools" class="ai-alt-settings-tab-panel" data-tab-panel="tools" role="tabpanel" hidden>
 			<h2><?php esc_html_e( 'Tools', 'dynamic-alt-tags' ); ?></h2>
 			<p><?php esc_html_e( 'Backfill scans existing images with empty alt text and adds them to the queue.', 'dynamic-alt-tags' ); ?></p>
-			<p class="description"><?php esc_html_e( 'Backfill now skips images that were already processed earlier.', 'dynamic-alt-tags' ); ?></p>
-
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-right:8px;">
 				<input type="hidden" name="action" value="ai_alt_run_backfill" />
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
@@ -287,7 +285,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<?php submit_button( __( 'Reset Metrics', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
 			</form>
-			<p class="description"><?php esc_html_e( 'Test Provider Connection runs both a baseline provider test and a latest queued image URL test (if a queued image exists).', 'dynamic-alt-tags' ); ?></p>
+			<p class="description" style="margin-top:10px;"><?php esc_html_e( 'Test Provider Connection runs both a baseline provider test and a latest queued image URL test (if a queued image exists).', 'dynamic-alt-tags' ); ?></p>
 
 			<?php if ( $show_status ) : ?>
 				<div class="ai-alt-connection-status ai-alt-connection-status-<?php echo esc_attr( $connection_state ); ?> notice <?php echo esc_attr( $notice_cls ); ?> is-dismissible">
