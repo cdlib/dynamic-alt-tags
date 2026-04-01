@@ -134,11 +134,11 @@ Go to **Media > Dynamic Alt Tags**.
 
 ## Changelog
 
-### 1.0.4
+### 1.0.5
 
 - Prepare the first stable 1.0.x release of Dynamic Alt Tags
 - Refresh documentation for current queue, access, metrics, and self-hosted update workflows
-- Align self-hosted updater package metadata with the 1.0.4 release build
+- Align self-hosted updater package metadata with the 1.0.5 release build
 
 ### 0.1.6
 
