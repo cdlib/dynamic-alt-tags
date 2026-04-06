@@ -103,6 +103,7 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 				'attachment_title' => isset( $context['attachment_title'] ) ? sanitize_text_field( (string) $context['attachment_title'] ) : '',
 				'post_title'       => isset( $context['post_title'] ) ? sanitize_text_field( (string) $context['post_title'] ) : '',
 			),
+			'request_meta' => $this->build_request_meta( $attachment_id, 'url' ),
 			'rules'     => array(
 				'concise'       => true,
 				'no_guessing'   => true,
@@ -132,6 +133,14 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 				$payload      = array_merge( $payload, $direct_payload );
 				$request_mode = 'bytes';
 			}
+		}
+
+		$payload['request_meta'] = $this->build_request_meta( $attachment_id, $request_mode );
+		$headers['X-AI-Alt-Site'] = $payload['request_meta']['site_host'];
+		$headers['X-AI-Alt-Version'] = $payload['request_meta']['plugin_version'];
+		$headers['X-AI-Alt-Request-Mode'] = $payload['request_meta']['request_mode'];
+		if ( ! empty( $payload['request_meta']['attachment_id'] ) ) {
+			$headers['X-AI-Alt-Attachment'] = (string) $payload['request_meta']['attachment_id'];
 		}
 
 		$response = wp_remote_post(
@@ -329,6 +338,29 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			'image_data_base64' => base64_encode( $binary ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
 			'image_mime_type'   => sanitize_text_field( $mime_type ),
 			'image_filename'    => sanitize_file_name( basename( $file_path ) ),
+		);
+	}
+
+	/**
+	 * Build request identity metadata for worker-side observability.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $request_mode Request mode.
+	 * @return array<string,mixed>
+	 */
+	private function build_request_meta( $attachment_id, $request_mode ) {
+		$site_url = home_url( '/' );
+		$site_host = wp_parse_url( $site_url, PHP_URL_HOST );
+		if ( ! is_string( $site_host ) || '' === trim( $site_host ) ) {
+			$site_host = 'unknown';
+		}
+
+		return array(
+			'site_url'       => esc_url_raw( $site_url ),
+			'site_host'      => sanitize_text_field( strtolower( trim( $site_host ) ) ),
+			'plugin_version' => sanitize_text_field( (string) WPAI_ALT_TEXT_VERSION ),
+			'request_mode'   => sanitize_key( (string) $request_mode ),
+			'attachment_id'  => absint( $attachment_id ),
 		);
 	}
 
