@@ -287,6 +287,8 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			return new WP_Error( 'ai_alt_missing_attachment_file', __( 'Attachment file path was not found for direct upload mode.', 'dynamic-alt-tags' ) );
 		}
 
+		$file_path = $this->get_preferred_direct_upload_path( $attachment_id, $file_path );
+
 		if ( ! file_exists( $file_path ) || ! is_readable( $file_path ) ) {
 			return new WP_Error( 'ai_alt_unreadable_attachment_file', __( 'Attachment file is not readable for direct upload mode.', 'dynamic-alt-tags' ) );
 		}
@@ -312,6 +314,12 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		if ( is_string( $mime_type ) && 'image/svg+xml' === strtolower( trim( $mime_type ) ) ) {
 			return new WP_Error( 'ai_alt_svg_not_supported', __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ) );
 		}
+
+		$file_type = wp_check_filetype( basename( $file_path ) );
+		if ( is_array( $file_type ) && ! empty( $file_type['type'] ) ) {
+			$mime_type = (string) $file_type['type'];
+		}
+
 		if ( ! is_string( $mime_type ) || 0 !== strpos( $mime_type, 'image/' ) ) {
 			$mime_type = 'application/octet-stream';
 		}
@@ -322,6 +330,59 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			'image_mime_type'   => sanitize_text_field( $mime_type ),
 			'image_filename'    => sanitize_file_name( basename( $file_path ) ),
 		);
+	}
+
+	/**
+	 * Prefer a large generated image size for direct upload when available.
+	 *
+	 * This keeps enough visual detail for alt text while reducing payload size
+	 * compared with sending the original full-resolution file every time.
+	 *
+	 * @param int    $attachment_id Attachment ID.
+	 * @param string $original_path Original attachment file path.
+	 * @return string
+	 */
+	private function get_preferred_direct_upload_path( $attachment_id, $original_path ) {
+		$attachment_id = absint( $attachment_id );
+		$original_path = (string) $original_path;
+
+		if ( ! $attachment_id || '' === trim( $original_path ) ) {
+			return $original_path;
+		}
+
+		$metadata = wp_get_attachment_metadata( $attachment_id );
+		if ( ! is_array( $metadata ) || empty( $metadata['sizes'] ) || ! is_array( $metadata['sizes'] ) ) {
+			return $original_path;
+		}
+
+		$base_dir        = trailingslashit( dirname( $original_path ) );
+		$preferred_sizes = array( 'medium_large', 'large', 'medium' );
+
+		foreach ( $preferred_sizes as $size_name ) {
+			if ( empty( $metadata['sizes'][ $size_name ] ) || ! is_array( $metadata['sizes'][ $size_name ] ) ) {
+				continue;
+			}
+
+			$size_data = $metadata['sizes'][ $size_name ];
+			$file_name = isset( $size_data['file'] ) ? sanitize_file_name( (string) $size_data['file'] ) : '';
+			if ( '' === $file_name ) {
+				continue;
+			}
+
+			$candidate_path = $base_dir . $file_name;
+			if ( ! file_exists( $candidate_path ) || ! is_readable( $candidate_path ) ) {
+				continue;
+			}
+
+			$candidate_size = filesize( $candidate_path );
+			if ( false !== $candidate_size && $candidate_size > self::MAX_INLINE_IMAGE_BYTES ) {
+				continue;
+			}
+
+			return $candidate_path;
+		}
+
+		return $original_path;
 	}
 
 	/**
