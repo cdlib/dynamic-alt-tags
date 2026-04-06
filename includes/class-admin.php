@@ -129,6 +129,7 @@ class WPAI_Alt_Text_Admin {
 					'success'            => __( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
 					'error'              => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
 						'partial'            => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
+						'providerPaused'     => __( 'Processing paused because the provider is temporarily unavailable.', 'dynamic-alt-tags' ),
 						'rowProcessing'      => __( 'Processing image...', 'dynamic-alt-tags' ),
 						'rowSuccess'         => __( 'Image successfully processed', 'dynamic-alt-tags' ),
 						'rowError'           => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
@@ -451,14 +452,18 @@ class WPAI_Alt_Text_Admin {
 		check_ajax_referer( 'ai_alt_process_now_ajax' );
 
 		$options             = $this->settings->get_options();
+		$started_at          = current_time( 'mysql' );
 		$before              = $this->queue_repo->get_active_status_counts();
 		$processed           = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
 		$after               = $this->queue_repo->get_active_status_counts();
 		$message             = '';
-		$remaining_claimable = ( isset( $after['queued'] ) ? absint( $after['queued'] ) : 0 ) + ( isset( $after['failed'] ) ? absint( $after['failed'] ) : 0 );
+		$provider_failure    = $this->get_latest_provider_wide_failure( $started_at );
+		$remaining_claimable = isset( $after['queued'] ) ? absint( $after['queued'] ) : 0;
 		$has_more            = $remaining_claimable > 0;
 
-		if ( $processed <= 0 ) {
+		if ( $provider_failure['message'] ) {
+			$message = $provider_failure['message'];
+		} elseif ( $processed <= 0 ) {
 			$message = $this->get_zero_processed_message( $before, $after );
 		}
 
@@ -468,6 +473,8 @@ class WPAI_Alt_Text_Admin {
 				'message'             => $message,
 				'remaining_claimable' => $remaining_claimable,
 				'has_more'            => $has_more,
+				'provider_wide'       => $provider_failure['provider_wide'],
+				'provider_error_code' => $provider_failure['code'],
 			)
 		);
 	}
@@ -507,6 +514,8 @@ class WPAI_Alt_Text_Admin {
 			wp_send_json_error(
 				array(
 					'message' => '' !== $message ? $message : __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
+					'provider_wide' => $this->is_provider_wide_queue_row( $row ),
+					'provider_error_code' => is_array( $row ) && ! empty( $row['error_code'] ) ? sanitize_key( (string) $row['error_code'] ) : '',
 				),
 				200
 			);
@@ -1263,6 +1272,11 @@ class WPAI_Alt_Text_Admin {
 	 * @return string
 	 */
 	private function get_zero_processed_message( $before, $after ) {
+		$provider_failure = $this->get_latest_provider_wide_failure();
+		if ( $provider_failure['message'] ) {
+			return $provider_failure['message'];
+		}
+
 		$queued_before     = isset( $before['queued'] ) ? absint( $before['queued'] ) : 0;
 		$failed_before     = isset( $before['failed'] ) ? absint( $before['failed'] ) : 0;
 		$generated_before  = isset( $before['generated'] ) ? absint( $before['generated'] ) : 0;
@@ -1749,6 +1763,56 @@ class WPAI_Alt_Text_Admin {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Get the latest provider-wide failure details, if any.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_latest_provider_wide_failure( $since = '' ) {
+		$latest_failed = $this->queue_repo->get_latest_failed_row();
+		if ( ! is_array( $latest_failed ) || ! $this->is_provider_wide_queue_row( $latest_failed ) ) {
+			return array(
+				'provider_wide' => false,
+				'code'          => '',
+				'message'       => '',
+			);
+		}
+
+		if ( '' !== $since ) {
+			$since_ts = strtotime( (string) $since );
+			$row_ts   = isset( $latest_failed['updated_at'] ) ? strtotime( (string) $latest_failed['updated_at'] ) : false;
+			if ( false !== $since_ts && false !== $row_ts && $row_ts < $since_ts ) {
+				return array(
+					'provider_wide' => false,
+					'code'          => '',
+					'message'       => '',
+				);
+			}
+		}
+
+		return array(
+			'provider_wide' => true,
+			'code'          => isset( $latest_failed['error_code'] ) ? sanitize_key( (string) $latest_failed['error_code'] ) : '',
+			'message'       => isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '',
+		);
+	}
+
+	/**
+	 * Determine whether a queue row represents a provider-wide failure.
+	 *
+	 * @param array<string,mixed>|null $row Queue row.
+	 * @return bool
+	 */
+	private function is_provider_wide_queue_row( $row ) {
+		if ( ! is_array( $row ) || empty( $row['error_code'] ) ) {
+			return false;
+		}
+
+		return WPAI_Alt_Text_Provider_Cloudflare::is_provider_wide_error_code(
+			sanitize_key( (string) $row['error_code'] )
+		);
 	}
 
 	/**

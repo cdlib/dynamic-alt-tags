@@ -49,6 +49,10 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 	<?php endif; ?>
 
 	<?php if ( 'process_partial' === $notice ) : ?>
+		<?php
+		$process_msg_raw     = isset( $_GET['process_msg'] ) ? wp_unslash( $_GET['process_msg'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended
+		$process_partial_msg = '' !== $process_msg_raw ? sanitize_text_field( rawurldecode( (string) $process_msg_raw ) ) : '';
+		?>
 		<div class="notice notice-warning is-dismissible">
 			<p>
 				<?php
@@ -58,6 +62,9 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				);
 				?>
 			</p>
+			<?php if ( '' !== $process_partial_msg ) : ?>
+				<p><?php echo esc_html( $process_partial_msg ); ?></p>
+			<?php endif; ?>
 		</div>
 	<?php endif; ?>
 

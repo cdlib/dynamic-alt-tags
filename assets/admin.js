@@ -1,6 +1,24 @@
 (function () {
 	'use strict';
 
+	function getPayloadMessage(payload, fallbackMessage) {
+		if (payload && payload.data && payload.data.message) {
+			return String(payload.data.message);
+		}
+
+		return fallbackMessage;
+	}
+
+	function isProviderWidePayload(payload) {
+		return Boolean(payload && payload.data && payload.data.provider_wide);
+	}
+
+	function createProviderWideError(message) {
+		var error = new Error(message);
+		error.aiAltProviderWide = true;
+		return error;
+	}
+
 	function setAltFieldValue(scope, value, attachmentId) {
 		var selectors = [
 			'input[data-setting="alt"]',
@@ -1865,7 +1883,7 @@
 			var settingsMaxIterations = 25;
 			var settingsLastDetailMessage = '';
 
-			function finishSettingsSuccess(processedCount, noticeType, messageText) {
+			function finishSettingsSuccess(processedCount, noticeType, messageText, extraArgs) {
 				window.clearInterval(settingsTimer);
 				settingsProgressBar.style.width = '100%';
 				settingsProgressBar.setAttribute('aria-valuenow', '100');
@@ -1876,6 +1894,13 @@
 					url.searchParams.set('page', 'ai-alt-text-settings');
 					url.searchParams.set('notice', noticeType);
 					url.searchParams.set('processed', String(processedCount));
+					if (extraArgs && typeof extraArgs === 'object') {
+						Object.keys(extraArgs).forEach(function (key) {
+							if (typeof extraArgs[key] === 'string' && extraArgs[key]) {
+								url.searchParams.set(key, extraArgs[key]);
+							}
+						});
+					}
 					window.location.href = url.toString();
 				}, 300);
 			}
@@ -1915,9 +1940,7 @@
 					.then(function (payload) {
 						if (!payload || payload.success !== true) {
 							var errorMessage = i18n.error || 'Queue processing failed. Please try again.';
-							if (payload && payload.data && payload.data.message) {
-								errorMessage = String(payload.data.message);
-							}
+							errorMessage = getPayloadMessage(payload, errorMessage);
 							throw new Error(errorMessage);
 						}
 
@@ -1935,6 +1958,10 @@
 						settingsLastDetailMessage = '';
 						if (payload.data && payload.data.message) {
 							settingsLastDetailMessage = String(payload.data.message);
+						}
+
+						if (isProviderWidePayload(payload)) {
+							throw createProviderWideError(settingsLastDetailMessage || i18n.providerPaused || i18n.error || 'Queue processing failed. Please try again.');
 						}
 
 						if (chunkProcessed > 0 && hasMore && settingsIterations < settingsMaxIterations) {
@@ -1957,9 +1984,15 @@
 						finishSettingsError(settingsLastDetailMessage || (i18n.error || 'Queue processing failed. Please try again.'));
 					})
 					.catch(function (err) {
+						var providerWideMessage = (err && err.aiAltProviderWide && err.message) ? String(err.message) : '';
 						if (settingsTotalProcessed > 0) {
 							var partialMessage = i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.';
-							finishSettingsSuccess(settingsTotalProcessed, 'process_partial', partialMessage.replace('%d', String(settingsTotalProcessed)));
+							finishSettingsSuccess(
+								settingsTotalProcessed,
+								'process_partial',
+								partialMessage.replace('%d', String(settingsTotalProcessed)),
+								providerWideMessage ? { process_msg: providerWideMessage } : null
+							);
 							return;
 						}
 
@@ -2076,13 +2109,30 @@
 					if (payload && payload.success === true) {
 						processedCount += 1;
 					} else {
+						if (isProviderWidePayload(payload)) {
+							var providerMessage = getPayloadMessage(payload, i18n.providerPaused || i18n.rowError || 'Image processing failed. Please try again.');
+							throw createProviderWideError(providerMessage);
+						}
 						failureCount += 1;
 					}
 				})
-				.catch(function () {
+				.catch(function (err) {
+					var providerWide = Boolean(err && err.aiAltProviderWide);
+					if (providerWide) {
+						var message = (err && err.message) ? String(err.message) : (i18n.providerPaused || i18n.rowError || 'Image processing failed. Please try again.');
+						setQueueProgress(Math.round((currentIndex / rowIds.length) * 100), message, 'error');
+						window.setTimeout(function () {
+							redirectQueueNotice('queue_error', { queue_msg: message });
+						}, 250);
+						return;
+					}
+
 					failureCount += 1;
 				})
 				.finally(function () {
+					if (queueMessage.classList.contains('ai-alt-message-error')) {
+						return;
+					}
 					currentIndex += 1;
 					processNextBulkRow();
 				});
