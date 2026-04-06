@@ -1299,6 +1299,10 @@ class WPAI_Alt_Text_Admin {
 			return __( 'No items were processed because queue jobs are currently locked in processing. Try again shortly.', 'dynamic-alt-tags' );
 		}
 
+		if ( 0 === $queued_before && $failed_before > 0 ) {
+			return __( 'No queued items were available to process. Failed items will retry automatically after a backoff period, up to the retry limit.', 'dynamic-alt-tags' );
+		}
+
 		$latest_failed = $this->queue_repo->get_latest_failed_row();
 		if ( is_array( $latest_failed ) ) {
 			$error_message = isset( $latest_failed['error_message'] ) ? sanitize_text_field( (string) $latest_failed['error_message'] ) : '';

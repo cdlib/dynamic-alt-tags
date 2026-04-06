@@ -12,6 +12,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WPAI_Alt_Text_Queue_Repo {
 
 	/**
+	 * Maximum number of automatic retries for failed rows.
+	 *
+	 * @var int
+	 */
+	const MAX_AUTO_RETRY_ATTEMPTS = 3;
+
+	/**
 	 * Table name.
 	 *
 	 * @var string
@@ -117,13 +124,14 @@ class WPAI_Alt_Text_Queue_Repo {
 					'suggested_alt' => '',
 					'final_alt'     => '',
 					'confidence'    => 0,
+					'attempts'      => 0,
 					'error_code'    => null,
 					'error_message' => null,
 					'locked_at'     => null,
 					'updated_at'    => $now,
 				),
 				array( 'id' => absint( $existing_id ) ),
-				array( '%d', '%s', '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' ),
+				array( '%d', '%s', '%s', '%s', '%s', '%f', '%d', '%s', '%s', '%s', '%s' ),
 				array( '%d' )
 			);
 
@@ -194,11 +202,17 @@ class WPAI_Alt_Text_Queue_Repo {
 			)
 		);
 
+		$ids = array_values( array_filter( array_map( 'absint', (array) $ids ) ) );
+
+		if ( count( $ids ) < $limit ) {
+			$ids = array_merge( $ids, $this->get_retryable_failed_job_ids( $limit - count( $ids ), $lock_expiry ) );
+		}
+
 		if ( empty( $ids ) ) {
 			return array();
 		}
 
-		$ids          = array_map( 'absint', $ids );
+		$ids          = array_values( array_unique( array_map( 'absint', $ids ) ) );
 		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
 		$update_sql   = $wpdb->prepare(
 			"UPDATE {$this->table} SET status = 'processing', locked_at = %s, updated_at = %s WHERE id IN ({$placeholders})",
@@ -260,13 +274,14 @@ class WPAI_Alt_Text_Queue_Repo {
 				'raw_caption'   => (string) $raw_caption,
 				'suggested_alt' => sanitize_text_field( $suggested_alt ),
 				'confidence'    => max( 0.0, min( 1.0, (float) $confidence ) ),
+				'attempts'      => 0,
 				'error_code'    => null,
 				'error_message' => null,
 				'updated_at'    => current_time( 'mysql' ),
 				'locked_at'     => null,
 			),
 			array( 'id' => absint( $id ) ),
-			array( '%s', '%s', '%s', '%f', '%s', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%f', '%d', '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 	}
@@ -298,6 +313,115 @@ class WPAI_Alt_Text_Queue_Repo {
 				absint( $id )
 			)
 		);
+	}
+
+	/**
+	 * Get failed row IDs that are eligible for automatic retry.
+	 *
+	 * @param int    $limit Number of rows to return.
+	 * @param string $lock_expiry Lock expiry datetime.
+	 * @return array<int,int>
+	 */
+	private function get_retryable_failed_job_ids( $limit, $lock_expiry ) {
+		global $wpdb;
+
+		$limit = max( 0, absint( $limit ) );
+		if ( 0 === $limit ) {
+			return array();
+		}
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, attempts, error_code, updated_at
+				 FROM {$this->table}
+				 WHERE status = 'failed'
+				 AND attempts < %d
+				 AND (locked_at IS NULL OR locked_at < %s)
+				 ORDER BY updated_at ASC
+				 LIMIT %d",
+				self::MAX_AUTO_RETRY_ATTEMPTS,
+				$lock_expiry,
+				max( $limit * 3, $limit )
+			),
+			ARRAY_A
+		);
+
+		if ( ! is_array( $rows ) || empty( $rows ) ) {
+			return array();
+		}
+
+		$eligible_ids = array();
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$id         = isset( $row['id'] ) ? absint( $row['id'] ) : 0;
+			$attempts   = isset( $row['attempts'] ) ? absint( $row['attempts'] ) : 0;
+			$error_code = isset( $row['error_code'] ) ? sanitize_key( (string) $row['error_code'] ) : '';
+			$updated_at = isset( $row['updated_at'] ) ? (string) $row['updated_at'] : '';
+
+			if ( ! $id || $attempts < 1 ) {
+				continue;
+			}
+
+			if ( WPAI_Alt_Text_Provider_Cloudflare::is_provider_wide_error_code( $error_code ) ) {
+				continue;
+			}
+
+			if ( ! $this->has_retry_backoff_elapsed( $attempts, $updated_at ) ) {
+				continue;
+			}
+
+			$eligible_ids[] = $id;
+			if ( count( $eligible_ids ) >= $limit ) {
+				break;
+			}
+		}
+
+		return $eligible_ids;
+	}
+
+	/**
+	 * Whether the retry backoff window has elapsed for a failed row.
+	 *
+	 * @param int    $attempts Failed-attempt count.
+	 * @param string $updated_at Datetime of latest failure.
+	 * @return bool
+	 */
+	private function has_retry_backoff_elapsed( $attempts, $updated_at ) {
+		$attempts   = max( 1, absint( $attempts ) );
+		$updated_at = trim( (string) $updated_at );
+		if ( '' === $updated_at ) {
+			return true;
+		}
+
+		$failed_at = strtotime( $updated_at );
+		if ( false === $failed_at ) {
+			return true;
+		}
+
+		return time() >= ( $failed_at + $this->get_retry_backoff_seconds( $attempts ) );
+	}
+
+	/**
+	 * Get the retry backoff window for a failed row.
+	 *
+	 * @param int $attempts Failed-attempt count.
+	 * @return int
+	 */
+	private function get_retry_backoff_seconds( $attempts ) {
+		$attempts = max( 1, absint( $attempts ) );
+
+		if ( 1 === $attempts ) {
+			return 5 * MINUTE_IN_SECONDS;
+		}
+
+		if ( 2 === $attempts ) {
+			return 15 * MINUTE_IN_SECONDS;
+		}
+
+		return HOUR_IN_SECONDS;
 	}
 
 	/**
