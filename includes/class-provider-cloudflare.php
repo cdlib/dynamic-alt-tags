@@ -11,6 +11,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interface {
 	/**
+	 * Site transient key for provider cooldown state.
+	 *
+	 * @var string
+	 */
+	const COOLDOWN_TRANSIENT_KEY = 'wpai_alt_provider_cooldown';
+
+	/**
+	 * Error code for exhausted provider quota.
+	 *
+	 * @var string
+	 */
+	const ERROR_QUOTA_EXHAUSTED = 'ai_alt_provider_quota_exhausted';
+
+	/**
+	 * Error code for provider resource limits.
+	 *
+	 * @var string
+	 */
+	const ERROR_RESOURCE_LIMITED = 'ai_alt_provider_resource_limited';
+
+	/**
+	 * Error code for temporary provider cooldown.
+	 *
+	 * @var string
+	 */
+	const ERROR_TEMPORARILY_UNAVAILABLE = 'ai_alt_provider_temporarily_unavailable';
+
+	/**
 	 * Max bytes to inline in direct upload mode.
 	 */
 	const MAX_INLINE_IMAGE_BYTES = 10485760; // 10MB.
@@ -39,6 +67,11 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 	 * @return array<string,mixed>|WP_Error
 	 */
 	public function generate_caption( $image_url, $context = array() ) {
+		$cooldown_error = $this->get_cooldown_error();
+		if ( is_wp_error( $cooldown_error ) ) {
+			return $cooldown_error;
+		}
+
 		$options    = $this->settings->get_options();
 		$worker_url = isset( $options['worker_url'] ) ? trim( (string) $options['worker_url'] ) : '';
 		$token      = isset( $options['cloudflare_token'] ) ? trim( (string) $options['cloudflare_token'] ) : '';
@@ -84,10 +117,20 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			$attachment_id = isset( $context['attachment_id'] ) ? absint( $context['attachment_id'] ) : 0;
 			if ( $attachment_id > 0 ) {
 				$direct_payload = $this->build_direct_image_payload( $attachment_id );
-				if ( ! is_wp_error( $direct_payload ) ) {
-					$payload      = array_merge( $payload, $direct_payload );
-					$request_mode = 'bytes';
+				if ( is_wp_error( $direct_payload ) ) {
+					return new WP_Error(
+						$direct_payload->get_error_code(),
+						sprintf(
+							/* translators: 1: error message, 2: request mode */
+							__( '%1$s; request mode: %2$s', 'dynamic-alt-tags' ),
+							$direct_payload->get_error_message(),
+							'bytes'
+						)
+					);
 				}
+
+				$payload      = array_merge( $payload, $direct_payload );
+				$request_mode = 'bytes';
 			}
 		}
 
@@ -101,13 +144,15 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		);
 
 		if ( is_wp_error( $response ) ) {
-			return new WP_Error(
+			return $this->normalize_provider_error(
+				new WP_Error(
 				$response->get_error_code(),
 				sprintf(
 					/* translators: 1: error message, 2: request mode */
 					__( '%1$s; request mode: %2$s', 'dynamic-alt-tags' ),
 					$response->get_error_message(),
 					$request_mode
+				)
 				)
 			);
 		}
@@ -178,7 +223,8 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			);
 
 			if ( ! empty( $parts ) ) {
-				return new WP_Error(
+				return $this->normalize_provider_error(
+					new WP_Error(
 					'ai_alt_provider_http_error',
 					sprintf(
 						/* translators: 1: HTTP status code, 2: provider error detail */
@@ -186,21 +232,26 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 						(int) $code,
 						implode( '; ', $parts )
 					)
+					)
 				);
 			}
 
-			return new WP_Error(
+			return $this->normalize_provider_error(
+				new WP_Error(
 				'ai_alt_provider_http_error',
 				sprintf(
 					/* translators: %d HTTP status code */
 					__( 'Provider returned HTTP %d', 'dynamic-alt-tags' ),
 					(int) $code
 				)
+				)
 			);
 		}
 
 		if ( ! is_array( $data ) ) {
-			return new WP_Error( 'ai_alt_provider_parse_error', __( 'Provider returned invalid JSON.', 'dynamic-alt-tags' ) );
+			return $this->normalize_provider_error(
+				new WP_Error( 'ai_alt_provider_parse_error', __( 'Provider returned invalid JSON.', 'dynamic-alt-tags' ) )
+			);
 		}
 
 		$caption = '';
@@ -311,5 +362,133 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 		}
 
 		return (bool) preg_match( '/\.svg$/i', $path );
+	}
+
+	/**
+	 * Whether a provider error code indicates a provider-wide outage/limit.
+	 *
+	 * @param string $code Error code.
+	 * @return bool
+	 */
+	public static function is_provider_wide_error_code( $code ) {
+		$code = sanitize_key( (string) $code );
+
+		return in_array(
+			$code,
+			array(
+				self::ERROR_QUOTA_EXHAUSTED,
+				self::ERROR_RESOURCE_LIMITED,
+				self::ERROR_TEMPORARILY_UNAVAILABLE,
+			),
+			true
+		);
+	}
+
+	/**
+	 * Normalize provider errors and apply cooldown when appropriate.
+	 *
+	 * @param WP_Error $error Raw error.
+	 * @return WP_Error
+	 */
+	private function normalize_provider_error( $error ) {
+		$message = trim( (string) $error->get_error_message() );
+		$lower   = strtolower( $message );
+
+		if ( false !== strpos( $lower, 'used up your daily free allocation' ) || false !== strpos( $lower, 'daily free allocation of 10,000 neurons' ) ) {
+			$this->set_provider_cooldown( self::ERROR_QUOTA_EXHAUSTED, $message, $this->seconds_until_next_utc_midnight() );
+
+			return new WP_Error(
+				self::ERROR_QUOTA_EXHAUSTED,
+				sprintf(
+					/* translators: %s original provider message */
+					__( 'Cloudflare daily free allocation is exhausted. %s', 'dynamic-alt-tags' ),
+					$message
+				)
+			);
+		}
+
+		if ( false !== strpos( $lower, 'worker exceeded resource limits' ) || false !== strpos( $lower, 'exceeded cpu time limit' ) || false !== strpos( $lower, 'error 1102' ) ) {
+			$this->set_provider_cooldown( self::ERROR_RESOURCE_LIMITED, $message, 15 * MINUTE_IN_SECONDS );
+
+			return new WP_Error(
+				self::ERROR_RESOURCE_LIMITED,
+				sprintf(
+					/* translators: %s original provider message */
+					__( 'Cloudflare Worker resource limits were exceeded. %s', 'dynamic-alt-tags' ),
+					$message
+				)
+			);
+		}
+
+		return $error;
+	}
+
+	/**
+	 * Return cooldown error if requests are temporarily paused.
+	 *
+	 * @return WP_Error|null
+	 */
+	private function get_cooldown_error() {
+		$cooldown = get_site_transient( self::COOLDOWN_TRANSIENT_KEY );
+		if ( ! is_array( $cooldown ) || empty( $cooldown['until'] ) ) {
+			return null;
+		}
+
+		$until = absint( $cooldown['until'] );
+		if ( $until <= time() ) {
+			delete_site_transient( self::COOLDOWN_TRANSIENT_KEY );
+			return null;
+		}
+
+		$code = isset( $cooldown['code'] ) ? sanitize_key( (string) $cooldown['code'] ) : self::ERROR_TEMPORARILY_UNAVAILABLE;
+		if ( self::ERROR_QUOTA_EXHAUSTED === $code ) {
+			return new WP_Error(
+				self::ERROR_TEMPORARILY_UNAVAILABLE,
+				__( 'Cloudflare daily free allocation is exhausted. Provider requests are paused until the next UTC reset window.', 'dynamic-alt-tags' )
+			);
+		}
+
+		return new WP_Error(
+			self::ERROR_TEMPORARILY_UNAVAILABLE,
+			__( 'Cloudflare provider requests are temporarily paused after recent resource-limit failures. Try again later.', 'dynamic-alt-tags' )
+		);
+	}
+
+	/**
+	 * Persist provider cooldown state.
+	 *
+	 * @param string $code Error code.
+	 * @param string $message Error message.
+	 * @param int    $ttl Cooldown in seconds.
+	 * @return void
+	 */
+	private function set_provider_cooldown( $code, $message, $ttl ) {
+		$ttl = max( MINUTE_IN_SECONDS, absint( $ttl ) );
+
+		set_site_transient(
+			self::COOLDOWN_TRANSIENT_KEY,
+			array(
+				'code'    => sanitize_key( (string) $code ),
+				'message' => sanitize_text_field( (string) $message ),
+				'until'   => time() + $ttl,
+			),
+			$ttl
+		);
+	}
+
+	/**
+	 * Seconds until next UTC midnight.
+	 *
+	 * @return int
+	 */
+	private function seconds_until_next_utc_midnight() {
+		$now           = time();
+		$next_midnight = strtotime( 'tomorrow 00:00:00 UTC', $now );
+
+		if ( false === $next_midnight ) {
+			return HOUR_IN_SECONDS;
+		}
+
+		return max( MINUTE_IN_SECONDS, (int) ( $next_midnight - $now ) );
 	}
 }

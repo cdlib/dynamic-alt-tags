@@ -185,7 +185,7 @@ class WPAI_Alt_Text_Queue_Repo {
 			$wpdb->prepare(
 				"SELECT id
 				 FROM {$this->table}
-				 WHERE status IN ('queued', 'failed')
+				 WHERE status IN ('queued')
 				 AND (locked_at IS NULL OR locked_at < %s)
 				 ORDER BY updated_at ASC
 				 LIMIT %d",
@@ -213,6 +213,32 @@ class WPAI_Alt_Text_Queue_Repo {
 			),
 			ARRAY_A
 		);
+	}
+
+	/**
+	 * Release claimed jobs back to queued state.
+	 *
+	 * @param array<int,int> $ids Queue row IDs.
+	 * @return void
+	 */
+	public function release_jobs( $ids ) {
+		global $wpdb;
+
+		$ids = array_values( array_filter( array_map( 'absint', (array) $ids ) ) );
+		if ( empty( $ids ) ) {
+			return;
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $ids ), '%d' ) );
+		$params       = array_merge( array( current_time( 'mysql' ) ), $ids );
+		$sql          = $wpdb->prepare(
+			"UPDATE {$this->table}
+			 SET status = 'queued', locked_at = NULL, updated_at = %s
+			 WHERE id IN ({$placeholders})",
+			$params
+		);
+
+		$wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 	}
 
 	/**

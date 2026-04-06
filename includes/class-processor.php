@@ -76,7 +76,7 @@ class WPAI_Alt_Text_Processor {
 		$min_conf    = isset( $options['min_confidence'] ) ? (float) $options['min_confidence'] : 0.7;
 		$need_review = ! empty( $options['require_review'] );
 
-		foreach ( $jobs as $job ) {
+		foreach ( $jobs as $index => $job ) {
 			$started_at          = microtime( true );
 			$provider_latency_ms = 0.0;
 			$provider_called     = false;
@@ -127,6 +127,12 @@ class WPAI_Alt_Text_Processor {
 					)
 				);
 				$this->record_processing_metric( false, $started_at, $provider_latency_ms, $provider_called, $attachment_id );
+
+				if ( $this->is_provider_wide_failure( $result ) ) {
+					$this->release_unprocessed_jobs( array_slice( $jobs, $index + 1 ) );
+					break;
+				}
+
 				continue;
 			}
 
@@ -336,6 +342,41 @@ class WPAI_Alt_Text_Processor {
 	 */
 	private function elapsed_ms( $started_at ) {
 		return max( 0.0, ( microtime( true ) - (float) $started_at ) * 1000 );
+	}
+
+	/**
+	 * Whether a result indicates a provider-wide failure.
+	 *
+	 * @param mixed $result Provider result.
+	 * @return bool
+	 */
+	private function is_provider_wide_failure( $result ) {
+		if ( ! is_wp_error( $result ) ) {
+			return false;
+		}
+
+		return WPAI_Alt_Text_Provider_Cloudflare::is_provider_wide_error_code( $result->get_error_code() );
+	}
+
+	/**
+	 * Release claimed jobs that were not yet processed.
+	 *
+	 * @param array<int,array<string,mixed>> $jobs Remaining jobs.
+	 * @return void
+	 */
+	private function release_unprocessed_jobs( $jobs ) {
+		$ids = array();
+
+		foreach ( $jobs as $job ) {
+			$row_id = isset( $job['id'] ) ? absint( $job['id'] ) : 0;
+			if ( $row_id > 0 ) {
+				$ids[] = $row_id;
+			}
+		}
+
+		if ( ! empty( $ids ) ) {
+			$this->queue_repo->release_jobs( $ids );
+		}
 	}
 
 	/**
