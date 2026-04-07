@@ -1130,9 +1130,6 @@ class WPAI_Alt_Text_Admin {
 			$status        = isset( $row['status'] ) ? sanitize_key( (string) $row['status'] ) : '';
 			$needs_generation = in_array( $status, array( 'queued', 'failed' ), true );
 			$is_queued        = 'queued' === $status;
-			$attempts         = isset( $row['attempts'] ) ? absint( $row['attempts'] ) : 0;
-			$error_code       = isset( $row['error_code'] ) ? sanitize_key( (string) $row['error_code'] ) : '';
-			$error_message    = isset( $row['error_message'] ) ? sanitize_text_field( (string) $row['error_message'] ) : '';
 			$confidence    = isset( $row['confidence'] ) ? (float) $row['confidence'] : 0.0;
 			$suggested     = isset( $row['suggested_alt'] ) ? (string) $row['suggested_alt'] : '';
 			$final_alt     = isset( $row['final_alt'] ) ? (string) $row['final_alt'] : '';
@@ -1140,8 +1137,6 @@ class WPAI_Alt_Text_Admin {
 			$display_alt_lines = max( 2, substr_count( wordwrap( $display_alt, 64, "\n", true ), "\n" ) + 1 );
 			$display_alt_rows  = min( 16, $display_alt_lines );
 			$processed_on  = '';
-			$status_detail = '';
-			$status_detail_lines = array();
 			if ( isset( $row['updated_at'] ) && '' !== trim( (string) $row['updated_at'] ) ) {
 				try {
 					$processed_dt = new DateTime( (string) $row['updated_at'], wp_timezone() );
@@ -1150,30 +1145,6 @@ class WPAI_Alt_Text_Admin {
 					$processed_on = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (string) $row['updated_at'], false );
 				}
 			}
-
-			if ( 'failed' === $status ) {
-				if ( $attempts > 0 ) {
-					$status_detail_lines[] = sprintf(
-						/* translators: %d attempt count */
-						__( 'Attempt %d of 3.', 'dynamic-alt-tags' ),
-						$attempts
-					);
-				}
-
-				if ( WPAI_Alt_Text_Provider_Cloudflare::is_provider_wide_error_code( $error_code ) ) {
-					$status_detail_lines[] = __( 'Provider paused. This item will not auto-retry until the provider is available again.', 'dynamic-alt-tags' );
-				} elseif ( $attempts >= WPAI_Alt_Text_Queue_Repo::MAX_AUTO_RETRY_ATTEMPTS ) {
-					$status_detail_lines[] = __( 'Retry limit reached. Use Generate Alt Text or Re-queue to try again.', 'dynamic-alt-tags' );
-				} else {
-					$status_detail_lines[] = $this->get_failed_row_retry_message( $attempts, isset( $row['updated_at'] ) ? (string) $row['updated_at'] : '' );
-				}
-
-				if ( '' !== $error_message ) {
-					$status_detail_lines[] = $error_message;
-				}
-			}
-
-			$status_detail = implode( ' ', array_filter( $status_detail_lines ) );
 			$thumb         = $attachment_id ? wp_get_attachment_image( $attachment_id, array( 80, 80 ), false, array( 'style' => 'max-width:80px;height:auto;' ) ) : '';
 			$image_url     = $attachment_id ? wp_get_attachment_url( $attachment_id ) : '';
 			?>
@@ -1194,12 +1165,7 @@ class WPAI_Alt_Text_Admin {
 					<?php endif; ?>
 					<div>#<?php echo esc_html( (string) $attachment_id ); ?></div>
 				</td>
-				<td class="ai-alt-col-status" data-label="<?php echo esc_attr( $label_status ); ?>">
-					<code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code>
-					<?php if ( '' !== $status_detail ) : ?>
-						<p class="description"><?php echo esc_html( $status_detail ); ?></p>
-					<?php endif; ?>
-				</td>
+				<td class="ai-alt-col-status" data-label="<?php echo esc_attr( $label_status ); ?>"><code class="ai-alt-row-status"><?php echo esc_html( $status ); ?></code></td>
 				<?php if ( ! $is_history ) : ?>
 					<td class="ai-alt-row-confidence ai-alt-col-confidence" data-label="<?php echo esc_attr( $label_conf ); ?>"><?php echo esc_html( number_format_i18n( $confidence, 2 ) ); ?></td>
 				<?php endif; ?>
@@ -1851,52 +1817,6 @@ class WPAI_Alt_Text_Admin {
 		return WPAI_Alt_Text_Provider_Cloudflare::is_provider_wide_error_code(
 			sanitize_key( (string) $row['error_code'] )
 		);
-	}
-
-	/**
-	 * Get a human-readable retry status message for a failed queue row.
-	 *
-	 * @param int    $attempts Failed-attempt count.
-	 * @param string $updated_at Datetime of latest failure.
-	 * @return string
-	 */
-	private function get_failed_row_retry_message( $attempts, $updated_at ) {
-		$attempts   = max( 1, absint( $attempts ) );
-		$updated_at = trim( (string) $updated_at );
-		if ( '' === $updated_at ) {
-			return __( 'Retry scheduled automatically after the backoff window.', 'dynamic-alt-tags' );
-		}
-
-		$failed_at = strtotime( $updated_at );
-		if ( false === $failed_at ) {
-			return __( 'Retry scheduled automatically after the backoff window.', 'dynamic-alt-tags' );
-		}
-
-		$retry_at = $failed_at;
-		if ( 1 === $attempts ) {
-			$retry_at += 5 * MINUTE_IN_SECONDS;
-		} elseif ( 2 === $attempts ) {
-			$retry_at += 15 * MINUTE_IN_SECONDS;
-		} else {
-			$retry_at += HOUR_IN_SECONDS;
-		}
-
-		$remaining = $retry_at - time();
-		if ( $remaining > 0 ) {
-			$retry_display = wp_date(
-				get_option( 'date_format' ) . ' ' . get_option( 'time_format' ),
-				$retry_at,
-				wp_timezone()
-			);
-
-			return sprintf(
-				/* translators: %s next retry time */
-				__( 'Retry scheduled after backoff at %s.', 'dynamic-alt-tags' ),
-				$retry_display
-			);
-		}
-
-		return __( 'Retry is available now and will run automatically on the next batch claim.', 'dynamic-alt-tags' );
 	}
 
 	/**
