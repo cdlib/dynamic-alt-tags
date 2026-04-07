@@ -23,12 +23,16 @@
 		var selectors = [
 			'input[data-setting="alt"]',
 			'textarea[data-setting="alt"]',
+			'[data-setting="alt"] input',
+			'[data-setting="alt"] textarea',
 			'[data-setting="alt"]',
 			'#attachment-details-two-column-alt-text',
 			'input#attachment_alt',
 			'textarea#attachment_alt',
 			'input[name="attachments[' + attachmentId + '][image_alt]"]',
-			'textarea[name="attachments[' + attachmentId + '][image_alt]"]'
+			'textarea[name="attachments[' + attachmentId + '][image_alt]"]',
+			'input[name="attachments[' + attachmentId + '][alt]"]',
+			'textarea[name="attachments[' + attachmentId + '][alt]"]'
 		];
 
 		selectors.forEach(function (selector) {
@@ -46,10 +50,39 @@
 	function setTitleFieldValue(scope, value, attachmentId) {
 		var selectors = [
 			'input[data-setting="title"]',
+			'[data-setting="title"] input',
+			'[data-setting="title"] textarea',
 			'[data-setting="title"]',
 			'#attachment-details-two-column-title',
 			'input#title',
-			'input[name="attachments[' + attachmentId + '][post_title]"]'
+			'input[name="attachments[' + attachmentId + '][post_title]"]',
+			'textarea[name="attachments[' + attachmentId + '][post_title]"]'
+		];
+
+		selectors.forEach(function (selector) {
+			var nodes = (scope || document).querySelectorAll(selector);
+			nodes.forEach(function (node) {
+				if (node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement) {
+					node.value = value;
+					node.dispatchEvent(new Event('input', { bubbles: true }));
+					node.dispatchEvent(new Event('change', { bubbles: true }));
+				}
+			});
+		});
+	}
+
+	function setCaptionFieldValue(scope, value, attachmentId) {
+		var selectors = [
+			'textarea[data-setting="caption"]',
+			'input[data-setting="caption"]',
+			'[data-setting="caption"] textarea',
+			'[data-setting="caption"] input',
+			'[data-setting="caption"]',
+			'#attachment-details-two-column-caption',
+			'textarea#excerpt',
+			'input#excerpt',
+			'textarea[name="attachments[' + attachmentId + '][post_excerpt]"]',
+			'input[name="attachments[' + attachmentId + '][post_excerpt]"]'
 		];
 
 		selectors.forEach(function (selector) {
@@ -67,9 +100,14 @@
 	function setDescriptionFieldValue(scope, value, attachmentId) {
 		var selectors = [
 			'textarea[data-setting="description"]',
+			'input[data-setting="description"]',
+			'[data-setting="description"] textarea',
+			'[data-setting="description"] input',
 			'[data-setting="description"]',
 			'#attachment-details-two-column-description',
 			'textarea#content',
+			'input#content',
+			'input[name="attachments[' + attachmentId + '][post_content]"]',
 			'textarea[name="attachments[' + attachmentId + '][post_content]"]'
 		];
 
@@ -85,7 +123,7 @@
 		});
 	}
 
-	function setMediaModelFields(attachmentId, altText, titleText, syncTitle, descriptionText, syncDescription) {
+	function setMediaModelFields(attachmentId, altText, titleText, syncTitle, captionText, syncCaption, descriptionText, syncDescription) {
 		if (!window.wp || !window.wp.media) {
 			return;
 		}
@@ -120,21 +158,41 @@
 			return;
 		}
 
+		var updates = {};
 		if (typeof altText === 'string' && altText.trim()) {
-			model.set('alt', altText);
+			updates.alt = altText;
+			updates.image_alt = altText;
 		}
 		if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
-			model.set('title', titleText);
+			updates.title = titleText;
+		}
+		if (syncCaption && typeof captionText === 'string' && captionText.trim()) {
+			updates.caption = captionText;
 		}
 		if (syncDescription && typeof descriptionText === 'string' && descriptionText.trim()) {
-			model.set('description', descriptionText);
+			updates.description = descriptionText;
+		}
+		if (Object.keys(updates).length) {
+			model.set(updates);
 		}
 		if (typeof model.trigger === 'function') {
+			if (typeof updates.alt === 'string') {
+				model.trigger('change:alt', model, updates.alt);
+			}
+			if (typeof updates.title === 'string') {
+				model.trigger('change:title', model, updates.title);
+			}
+			if (typeof updates.caption === 'string') {
+				model.trigger('change:caption', model, updates.caption);
+			}
+			if (typeof updates.description === 'string') {
+				model.trigger('change:description', model, updates.description);
+			}
 			model.trigger('change');
 		}
 	}
 
-	function setActiveSelectionModelFields(altText, titleText, syncTitle, descriptionText, syncDescription) {
+	function setActiveSelectionModelFields(altText, titleText, syncTitle, captionText, syncCaption, descriptionText, syncDescription) {
 		if (!window.wp || !window.wp.media || !window.wp.media.frame || typeof window.wp.media.frame.state !== 'function') {
 			return;
 		}
@@ -159,6 +217,9 @@
 			if (syncTitle && typeof titleText === 'string' && titleText.trim()) {
 				model.set('title', titleText);
 			}
+			if (syncCaption && typeof captionText === 'string' && captionText.trim()) {
+				model.set('caption', captionText);
+			}
 			if (syncDescription && typeof descriptionText === 'string' && descriptionText.trim()) {
 				model.set('description', descriptionText);
 			}
@@ -170,8 +231,9 @@
 		}
 	}
 
-	function applyAltAndMetaAcrossUi(attachmentId, altText, syncTitle, syncDescription, container) {
+	function applyAltAndMetaAcrossUi(attachmentId, altText, syncTitle, syncCaption, syncDescription, container) {
 		var shouldSyncTitle = Boolean(syncTitle);
+		var shouldSyncCaption = Boolean(syncCaption);
 		var shouldSyncDescription = Boolean(syncDescription);
 		var updateOnce = function () {
 			try {
@@ -179,6 +241,9 @@
 					setAltFieldValue(container, altText, attachmentId);
 					if (shouldSyncTitle) {
 						setTitleFieldValue(container, altText, attachmentId);
+					}
+					if (shouldSyncCaption) {
+						setCaptionFieldValue(container, altText, attachmentId);
 					}
 					if (shouldSyncDescription) {
 						setDescriptionFieldValue(container, altText, attachmentId);
@@ -188,11 +253,14 @@
 				if (shouldSyncTitle) {
 					setTitleFieldValue(document, altText, attachmentId);
 				}
+				if (shouldSyncCaption) {
+					setCaptionFieldValue(document, altText, attachmentId);
+				}
 				if (shouldSyncDescription) {
 					setDescriptionFieldValue(document, altText, attachmentId);
 				}
-				setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle, altText, shouldSyncDescription);
-				setActiveSelectionModelFields(altText, altText, shouldSyncTitle, altText, shouldSyncDescription);
+				setMediaModelFields(attachmentId, altText, altText, shouldSyncTitle, altText, shouldSyncCaption, altText, shouldSyncDescription);
+				setActiveSelectionModelFields(altText, altText, shouldSyncTitle, altText, shouldSyncCaption, altText, shouldSyncDescription);
 			} catch (e) {
 				// Never turn a successful server response into a UI error due to local binding issues.
 			}
@@ -203,6 +271,7 @@
 		window.setTimeout(updateOnce, 120);
 		window.setTimeout(updateOnce, 360);
 		window.setTimeout(updateOnce, 800);
+		window.setTimeout(updateOnce, 1500);
 	}
 
 	function setUploadApplyVisibility(select) {
@@ -647,8 +716,9 @@
 						var altText = String(payload.data.alt_text);
 						var container = select.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 						var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
+						var shouldSyncCaption = Boolean(adminData && adminData.syncCaptionFromAlt);
 						var shouldSyncDescription = Boolean(adminData && adminData.syncDescriptionFromAlt);
-						applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncDescription, container);
+						applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncCaption, shouldSyncDescription, container);
 					}
 
 					if (customInput instanceof HTMLInputElement || customInput instanceof HTMLTextAreaElement) {
@@ -732,8 +802,9 @@
 					}
 					var container = trigger.closest('.attachment-details, .media-sidebar, .compat-item, .setting, tr, table, tbody');
 					var shouldSyncTitle = Boolean(adminData && adminData.syncTitleFromAlt);
+					var shouldSyncCaption = Boolean(adminData && adminData.syncCaptionFromAlt);
 					var shouldSyncDescription = Boolean(adminData && adminData.syncDescriptionFromAlt);
-					applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncDescription, container);
+					applyAltAndMetaAcrossUi(attachmentId, altText, shouldSyncTitle, shouldSyncCaption, shouldSyncDescription, container);
 				}
 			})
 			.catch(function () {

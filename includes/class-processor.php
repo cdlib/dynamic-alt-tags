@@ -278,6 +278,14 @@ class WPAI_Alt_Text_Processor {
 				)
 			);
 		}
+		if ( ! empty( $options['sync_caption_from_alt'] ) ) {
+			wp_update_post(
+				array(
+					'ID'           => $attachment_id,
+					'post_excerpt' => $alt_text,
+				)
+			);
+		}
 		if ( ! empty( $options['sync_description_from_alt'] ) ) {
 			wp_update_post(
 				array(

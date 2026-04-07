@@ -556,8 +556,9 @@ class WPAI_Alt_Text_Plugin {
 		$attachment_id = absint( $attachment_id );
 		$action        = sanitize_key( (string) $action );
 		$custom_alt    = sanitize_text_field( (string) $custom_alt );
-		$options       = $this->settings->get_options();
-		$sync_title    = ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] );
+		$options          = $this->settings->get_options();
+		$sync_title       = ! isset( $options['sync_title_from_alt'] ) || ! empty( $options['sync_title_from_alt'] );
+		$sync_caption     = ! empty( $options['sync_caption_from_alt'] );
 		$sync_description = ! empty( $options['sync_description_from_alt'] );
 
 		if ( ! $attachment_id || ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom', 'generate' ), true ) ) {
@@ -682,6 +683,14 @@ class WPAI_Alt_Text_Plugin {
 						)
 					);
 				}
+				if ( $sync_caption ) {
+					wp_update_post(
+						array(
+							'ID'           => $attachment_id,
+							'post_excerpt' => $custom_alt,
+						)
+					);
+				}
 				if ( $sync_description ) {
 					wp_update_post(
 						array(
@@ -759,6 +768,14 @@ class WPAI_Alt_Text_Plugin {
 				array(
 					'ID'         => $attachment_id,
 					'post_title' => $custom_alt,
+				)
+			);
+		}
+		if ( $sync_caption ) {
+			wp_update_post(
+				array(
+					'ID'           => $attachment_id,
+					'post_excerpt' => $custom_alt,
 				)
 			);
 		}
