@@ -70,17 +70,22 @@ class WPAI_Alt_Text_Settings {
 	 * @return array<string,mixed>
 	 */
 	public function get_metrics() {
+		$current_day_key = $this->get_los_angeles_day_key();
 		$defaults = array(
-			'total_images_processed'   => 0,
-			'processed_attachment_ids' => array(),
-			'success_count'            => 0,
-			'failure_count'            => 0,
-			'provider_call_count'      => 0,
-			'total_processing_time_ms' => 0.0,
+			'total_images_processed'    => 0,
+			'processed_attachment_ids'  => array(),
+			'success_count'             => 0,
+			'failure_count'             => 0,
+			'provider_call_count'       => 0,
+			'total_processing_time_ms'  => 0.0,
 			'total_provider_latency_ms' => 0.0,
-			'last_processing_time_ms'  => 0.0,
-			'last_provider_latency_ms' => 0.0,
-			'last_processed_at'        => '',
+			'last_processing_time_ms'   => 0.0,
+			'last_provider_latency_ms'  => 0.0,
+			'last_processed_at'         => '',
+			'daily_metrics_date'        => $current_day_key,
+			'daily_images_processed'    => 0,
+			'daily_provider_call_count' => 0,
+			'daily_processed_attachment_ids' => array(),
 		);
 
 		$raw = get_option( self::METRICS_OPTION_KEY, array() );
@@ -106,6 +111,23 @@ class WPAI_Alt_Text_Settings {
 		$metrics['last_provider_latency_ms']  = max( 0.0, (float) $metrics['last_provider_latency_ms'] );
 		$metrics['last_processed_at']         = is_string( $metrics['last_processed_at'] ) ? sanitize_text_field( $metrics['last_processed_at'] ) : '';
 
+		$daily_processed_attachment_ids = isset( $metrics['daily_processed_attachment_ids'] ) && is_array( $metrics['daily_processed_attachment_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['daily_processed_attachment_ids'] ) ) ) )
+			: array();
+		$metrics['daily_metrics_date']        = is_string( $metrics['daily_metrics_date'] ) ? sanitize_text_field( $metrics['daily_metrics_date'] ) : $current_day_key;
+		$metrics['daily_images_processed']    = max( 0, absint( $metrics['daily_images_processed'] ) );
+		$metrics['daily_provider_call_count'] = max( 0, absint( $metrics['daily_provider_call_count'] ) );
+		$metrics['daily_processed_attachment_ids'] = $daily_processed_attachment_ids;
+
+		if ( $metrics['daily_metrics_date'] !== $current_day_key ) {
+			$metrics['daily_metrics_date']             = $current_day_key;
+			$metrics['daily_images_processed']         = 0;
+			$metrics['daily_provider_call_count']      = 0;
+			$metrics['daily_processed_attachment_ids'] = array();
+		} elseif ( ! empty( $daily_processed_attachment_ids ) ) {
+			$metrics['daily_images_processed'] = count( $daily_processed_attachment_ids );
+		}
+
 		return $metrics;
 	}
 
@@ -128,12 +150,18 @@ class WPAI_Alt_Text_Settings {
 			$metrics['processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['total_images_processed'] = count( $metrics['processed_attachment_ids'] );
+
+		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['daily_processed_attachment_ids'], true ) ) {
+			$metrics['daily_processed_attachment_ids'][] = $attachment_id;
+		}
+		$metrics['daily_images_processed'] = count( $metrics['daily_processed_attachment_ids'] );
 		if ( $is_success ) {
 			$metrics['success_count'] += 1;
 		} else {
 			$metrics['failure_count'] += 1;
 		}
 		$metrics['provider_call_count']       += $provider_call_count;
+		$metrics['daily_provider_call_count'] += $provider_call_count;
 		$metrics['total_processing_time_ms']  += $processing_time_ms;
 		$metrics['total_provider_latency_ms'] += $provider_latency_ms;
 		$metrics['last_processing_time_ms']    = $processing_time_ms;
@@ -150,6 +178,18 @@ class WPAI_Alt_Text_Settings {
 	 */
 	public function reset_metrics() {
 		delete_option( self::METRICS_OPTION_KEY );
+	}
+
+	/**
+	 * Get the current Los Angeles date key for daily metrics.
+	 *
+	 * @return string
+	 */
+	private function get_los_angeles_day_key() {
+		$tz = new DateTimeZone( 'America/Los_Angeles' );
+		$now = new DateTimeImmutable( 'now', $tz );
+
+		return $now->format( 'Y-m-d' );
 	}
 
 	/**

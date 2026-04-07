@@ -100,6 +100,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 	<?php
 	$metrics = isset( $metrics ) && is_array( $metrics ) ? $metrics : array();
 	$coverage = isset( $coverage ) && is_array( $coverage ) ? $coverage : array();
+	$daily_metrics = isset( $daily_metrics ) && is_array( $daily_metrics ) ? $daily_metrics : array();
 
 	$total_images            = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
 	$images_with_alt         = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
@@ -116,6 +117,7 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 	$average_provider_ms     = $provider_call_count > 0 ? $total_provider_ms / $provider_call_count : 0.0;
 	$last_processed_at       = isset( $metrics['last_processed_at'] ) ? sanitize_text_field( (string) $metrics['last_processed_at'] ) : '';
 	$last_processed_display  = '';
+	$processed_today         = isset( $daily_metrics['daily_images_processed'] ) ? absint( $daily_metrics['daily_images_processed'] ) : 0;
 	if ( '' !== $last_processed_at ) {
 		$last_processed_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_processed_at );
 		if ( ! is_string( $last_processed_display ) || '' === $last_processed_display ) {
@@ -201,16 +203,20 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 					<span id="ai-alt-metric-total-images"><?php echo esc_html( number_format_i18n( $total_images ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Images with alt tags', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images with alt text', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-images-with-alt"><?php echo esc_html( number_format_i18n( $images_with_alt ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Images without alt tags', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images without alt text', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-images-without-alt"><?php echo esc_html( number_format_i18n( $images_without_alt ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
 					<strong><?php esc_html_e( 'Total images processed', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-total-processed"><?php echo esc_html( number_format_i18n( $total_processed ) ); ?></span>
+				</div>
+				<div class="ai-alt-metric-card">
+					<strong><?php esc_html_e( 'Total images processed today', 'dynamic-alt-tags' ); ?></strong>
+					<span id="ai-alt-metric-processed-today"><?php echo esc_html( number_format_i18n( $processed_today ) ); ?></span>
 				</div>
 			</div>
 

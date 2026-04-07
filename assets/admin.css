@@ -886,6 +886,14 @@
 	color: #1d2327;
 }
 
+.ai-alt-wrap .ai-alt-metric-card small {
+	display: block;
+	margin-top: 6px;
+	font-size: 11px;
+	line-height: 1.4;
+	color: #50575e;
+}
+
 .ai-alt-wrap .ai-alt-metrics-table {
 	max-width: 900px;
 	margin: 0 0 18px;

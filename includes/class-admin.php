@@ -188,6 +188,7 @@ class WPAI_Alt_Text_Admin {
 		$connection_status = $this->get_connection_status();
 		$metrics           = $this->settings->get_metrics();
 		$coverage          = $this->queue_repo->get_image_alt_coverage_counts();
+		$daily_metrics     = $this->get_daily_metrics_summary( $metrics );
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-settings.php';
 	}
@@ -254,6 +255,7 @@ class WPAI_Alt_Text_Admin {
 		$total_images = $this->queue_repo->get_total_no_alt_images();
 		$metrics      = $this->settings->get_metrics();
 		$coverage     = $this->queue_repo->get_image_alt_coverage_counts();
+		$daily_metrics = $this->get_daily_metrics_summary( $metrics );
 
 		include WPAI_ALT_TEXT_DIR . 'admin/views-page-queue.php';
 	}
@@ -1869,6 +1871,7 @@ class WPAI_Alt_Text_Admin {
 	private function get_settings_metrics_fields() {
 		$metrics  = $this->settings->get_metrics();
 		$coverage = $this->queue_repo->get_image_alt_coverage_counts();
+		$daily    = $this->get_daily_metrics_summary( $metrics );
 
 		$total_images          = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
 		$images_with_alt       = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
@@ -1898,6 +1901,7 @@ class WPAI_Alt_Text_Admin {
 			'ai-alt-metric-images-with-alt'          => number_format_i18n( $images_with_alt ),
 			'ai-alt-metric-images-without-alt'       => number_format_i18n( $images_without_alt ),
 			'ai-alt-metric-total-processed'          => number_format_i18n( $total_processed ),
+			'ai-alt-metric-processed-today'          => number_format_i18n( $daily['daily_images_processed'] ),
 			'ai-alt-metric-success-count'            => number_format_i18n( $success_count ),
 			'ai-alt-metric-failure-count'            => number_format_i18n( $failure_count ),
 			'ai-alt-metric-average-processing'       => number_format_i18n( $average_processing_ms, 2 ) . ' ms',
@@ -1905,6 +1909,22 @@ class WPAI_Alt_Text_Admin {
 			'ai-alt-metric-last-processing'          => number_format_i18n( $last_processing_ms, 2 ) . ' ms',
 			'ai-alt-metric-last-provider-latency'    => number_format_i18n( $last_provider_latency, 2 ) . ' ms',
 			'ai-alt-metric-last-processed-at'        => '' !== $last_processed_text ? $last_processed_text : __( 'Not yet recorded', 'dynamic-alt-tags' ),
+		);
+	}
+
+	/**
+	 * Build daily usage summary values.
+	 *
+	 * @param array<string,mixed> $metrics Metrics data.
+	 * @return array<string,mixed>
+	 */
+	private function get_daily_metrics_summary( $metrics ) {
+		$daily_provider_call_count = isset( $metrics['daily_provider_call_count'] ) ? max( 0, absint( $metrics['daily_provider_call_count'] ) ) : 0;
+		$daily_images_processed    = isset( $metrics['daily_images_processed'] ) ? max( 0, absint( $metrics['daily_images_processed'] ) ) : 0;
+
+		return array(
+			'daily_images_processed'    => $daily_images_processed,
+			'daily_provider_call_count' => $daily_provider_call_count,
 		);
 	}
 
