@@ -133,7 +133,9 @@ Behavior:
 === Settings Reference ===
 * `Cloudflare Worker URL`
 * `Cloudflare API Token`
-* `Batch Size`
+* `Enable Background Processing`
+* `Background Processing Frequency`
+* `Images Processed Per Background Run`
 * `Min Confidence`
 * `Use URL Mode - Send Image URL`
 * `Auto-Approve New Uploads`
@@ -153,6 +155,7 @@ Behavior:
 * Manual queue runs and bulk processing are capped to reduce request spikes.
 * Failed items use retry backoff instead of immediate repeated retries.
 * Provider-wide quota or resource failures pause processing rather than continuing to flood requests.
+* Background processing is off by default and can be enabled with configurable frequency and per-run limits.
 
 === Troubleshooting ===
 ==== Provider Test Fails ====
@@ -175,7 +178,7 @@ Behavior:
 
 === Best Practices ===
 * Start with `Require Manual Review` enabled.
-* Use a conservative `Batch Size` during rollout.
+* Leave background processing turned off if you are running into provider usage limits.
 * Review History regularly for quality.
 * Grant queue access only to users who manage media metadata.
 
@@ -184,6 +187,7 @@ Behavior:
 * Bump version to 1.0.6.
 * Keep self-hosted updater package metadata aligned with the 1.0.6 release build.
 * Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows.
+* Add background processing settings with configurable WP-Cron frequency and images-per-run limits, off by default.
 
 = 1.0.5 =
 * Prepare the first stable 1.0.x release of Dynamic Alt Tags.

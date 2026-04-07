@@ -178,11 +178,18 @@ class WPAI_Alt_Text_Plugin {
 	 * @return array<string,array<string,mixed>>
 	 */
 	public function add_cron_schedules( $schedules ) {
-		if ( ! isset( $schedules['five_minutes'] ) ) {
-			$schedules['five_minutes'] = array(
-				'interval' => 5 * MINUTE_IN_SECONDS,
-				'display'  => __( 'Every 5 Minutes', 'dynamic-alt-tags' ),
-			);
+		foreach ( range( 5, 60, 5 ) as $minutes ) {
+			$schedule_name = $this->get_background_schedule_name( $minutes );
+			if ( ! isset( $schedules[ $schedule_name ] ) ) {
+				$schedules[ $schedule_name ] = array(
+					'interval' => (int) $minutes * MINUTE_IN_SECONDS,
+					'display'  => sprintf(
+						/* translators: %d minute interval */
+						__( 'Every %d Minutes', 'dynamic-alt-tags' ),
+						(int) $minutes
+					),
+				);
+			}
 		}
 
 		return $schedules;
@@ -195,7 +202,11 @@ class WPAI_Alt_Text_Plugin {
 	 */
 	public function run_cron() {
 		$options = $this->settings->get_options();
-		$limit   = isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10;
+		if ( empty( $options['enable_background_processing'] ) ) {
+			return;
+		}
+
+		$limit = isset( $options['background_batch_size'] ) ? absint( $options['background_batch_size'] ) : 5;
 		$this->processor->process_batch( $limit );
 	}
 
@@ -205,21 +216,53 @@ class WPAI_Alt_Text_Plugin {
 	 * @return void
 	 */
 	public function ensure_cron_scheduled() {
+		$options = $this->settings->get_options();
+		if ( empty( $options['enable_background_processing'] ) ) {
+			$this->unschedule_background_processing();
+			return;
+		}
+
+		$interval = isset( $options['background_process_interval'] ) ? absint( $options['background_process_interval'] ) : 5;
+		$interval = max( 5, min( 60, $interval ) );
+		if ( 0 !== $interval % 5 ) {
+			$interval = 5;
+		}
+
+		$desired_schedule = $this->get_background_schedule_name( $interval );
 		$event = wp_get_scheduled_event( WPAI_ALT_TEXT_CRON_HOOK );
 		if ( false === $event ) {
-			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'five_minutes', WPAI_ALT_TEXT_CRON_HOOK );
+			wp_schedule_event( time() + MINUTE_IN_SECONDS, $desired_schedule, WPAI_ALT_TEXT_CRON_HOOK );
 			return;
 		}
 
 		$schedule = isset( $event->schedule ) ? (string) $event->schedule : '';
-		if ( 'five_minutes' !== $schedule ) {
-			$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
-			while ( $timestamp ) {
-				wp_unschedule_event( $timestamp, WPAI_ALT_TEXT_CRON_HOOK );
-				$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
-			}
-			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'five_minutes', WPAI_ALT_TEXT_CRON_HOOK );
+		if ( $desired_schedule !== $schedule ) {
+			$this->unschedule_background_processing();
+			wp_schedule_event( time() + MINUTE_IN_SECONDS, $desired_schedule, WPAI_ALT_TEXT_CRON_HOOK );
 		}
+	}
+
+	/**
+	 * Remove all scheduled background processing events.
+	 *
+	 * @return void
+	 */
+	private function unschedule_background_processing() {
+		$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
+		while ( $timestamp ) {
+			wp_unschedule_event( $timestamp, WPAI_ALT_TEXT_CRON_HOOK );
+			$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Build the cron schedule name for a background interval.
+	 *
+	 * @param int $minutes Interval in minutes.
+	 * @return string
+	 */
+	private function get_background_schedule_name( $minutes ) {
+		return 'ai_alt_every_' . absint( $minutes ) . '_minutes';
 	}
 
 	/**

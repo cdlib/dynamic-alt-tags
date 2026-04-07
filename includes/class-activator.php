@@ -26,13 +26,6 @@ class WPAI_Alt_Text_Activator {
 	public static function activate() {
 		self::create_queue_table();
 		self::set_default_options();
-		add_filter( 'cron_schedules', array( __CLASS__, 'register_activation_schedules' ) );
-
-		if ( ! wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK ) ) {
-			wp_schedule_event( time() + MINUTE_IN_SECONDS, 'five_minutes', WPAI_ALT_TEXT_CRON_HOOK );
-		}
-
-		remove_filter( 'cron_schedules', array( __CLASS__, 'register_activation_schedules' ) );
 	}
 
 	/**
@@ -47,23 +40,6 @@ class WPAI_Alt_Text_Activator {
 			wp_unschedule_event( $timestamp, WPAI_ALT_TEXT_CRON_HOOK );
 			$timestamp = wp_next_scheduled( WPAI_ALT_TEXT_CRON_HOOK );
 		}
-	}
-
-	/**
-	 * Register custom schedule needed during activation.
-	 *
-	 * @param array<string,array<string,mixed>> $schedules Existing schedules.
-	 * @return array<string,array<string,mixed>>
-	 */
-	public static function register_activation_schedules( $schedules ) {
-		if ( ! isset( $schedules['five_minutes'] ) ) {
-			$schedules['five_minutes'] = array(
-				'interval' => 5 * MINUTE_IN_SECONDS,
-				'display'  => __( 'Every 5 Minutes', 'dynamic-alt-tags' ),
-			);
-		}
-
-		return $schedules;
 	}
 
 	/**
@@ -116,6 +92,9 @@ class WPAI_Alt_Text_Activator {
 				'cloudflare_token'    => '',
 				'worker_url'          => '',
 				'use_url_mode'        => 0,
+				'enable_background_processing' => 0,
+				'background_process_interval'  => 5,
+				'background_batch_size'        => 5,
 				'batch_size'          => 5,
 				'min_confidence'      => 0.70,
 				'auto_apply_new_uploads' => 0,

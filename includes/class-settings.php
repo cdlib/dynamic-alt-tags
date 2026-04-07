@@ -37,6 +37,9 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => '',
 			'worker_url'          => '',
 			'use_url_mode'        => 0,
+			'enable_background_processing' => 0,
+			'background_process_interval'  => 5,
+			'background_batch_size'        => 5,
 			'batch_size'          => 5,
 			'min_confidence'      => 0.70,
 			'auto_apply_new_uploads' => 0,
@@ -60,6 +63,17 @@ class WPAI_Alt_Text_Settings {
 		if ( ! array_key_exists( 'use_url_mode', $raw ) && array_key_exists( 'direct_upload_mode', $raw ) ) {
 			$options['use_url_mode'] = ! empty( $raw['direct_upload_mode'] ) ? 0 : 1;
 		}
+
+		if ( ! array_key_exists( 'background_batch_size', $raw ) && array_key_exists( 'batch_size', $raw ) ) {
+			$options['background_batch_size'] = max( 1, min( 20, absint( $raw['batch_size'] ) ) );
+		}
+
+		$options['enable_background_processing'] = ! empty( $options['enable_background_processing'] ) ? 1 : 0;
+		$options['background_process_interval']  = max( 5, min( 60, absint( $options['background_process_interval'] ) ) );
+		if ( 0 !== $options['background_process_interval'] % 5 ) {
+			$options['background_process_interval'] = 5;
+		}
+		$options['background_batch_size'] = max( 1, min( 20, absint( $options['background_batch_size'] ) ) );
 
 		return $options;
 	}
@@ -228,7 +242,9 @@ class WPAI_Alt_Text_Settings {
 		$fields = array(
 			'worker_url'          => __( 'Cloudflare Worker URL', 'dynamic-alt-tags' ),
 			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
-			'batch_size'          => __( 'Batch Size', 'dynamic-alt-tags' ),
+			'enable_background_processing' => __( 'Enable Background Processing', 'dynamic-alt-tags' ),
+			'background_process_interval'  => __( 'Background Processing Frequency', 'dynamic-alt-tags' ),
+			'background_batch_size'        => __( 'Images Processed Per Background Run', 'dynamic-alt-tags' ),
 			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
 			'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
 			'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
@@ -301,7 +317,13 @@ class WPAI_Alt_Text_Settings {
 			$current['cloudflare_token'] = '' === $token ? '' : sanitize_text_field( $token );
 		}
 
-		$current['batch_size'] = isset( $input['batch_size'] ) ? max( 1, min( 20, absint( $input['batch_size'] ) ) ) : 5;
+		$current['enable_background_processing'] = ! empty( $input['enable_background_processing'] ) ? 1 : 0;
+		$current['background_process_interval']  = isset( $input['background_process_interval'] ) ? max( 5, min( 60, absint( $input['background_process_interval'] ) ) ) : 5;
+		if ( 0 !== $current['background_process_interval'] % 5 ) {
+			$current['background_process_interval'] = 5;
+		}
+		$current['background_batch_size'] = isset( $input['background_batch_size'] ) ? max( 1, min( 20, absint( $input['background_batch_size'] ) ) ) : 5;
+		$current['batch_size'] = $current['background_batch_size'];
 
 		$current['min_confidence'] = isset( $input['min_confidence'] ) ? (float) $input['min_confidence'] : 0.70;
 		$current['min_confidence'] = max( 0.00, min( 1.00, $current['min_confidence'] ) );
@@ -418,14 +440,16 @@ class WPAI_Alt_Text_Settings {
 			return;
 		}
 
-		if ( in_array( $id, array( 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'sync_description_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
+		if ( in_array( $id, array( 'enable_background_processing', 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'sync_description_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
 				esc_attr( $name ),
 				checked( 1, (int) $options[ $id ], false )
 			);
 
-			if ( 'use_url_mode' === $id ) {
+			if ( 'enable_background_processing' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, queued items can be processed automatically in the background using WP-Cron. It is recommended to keep this feature turned off if you are running into usage limits.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'use_url_mode' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, the plugin sends image URLs and the Worker fetches images remotely. Leave unchecked to use Direct Upload Mode (default, recommended).', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'auto_apply_new_uploads' === $id ) {
 				echo '<p class="description">' . esc_html__( 'Reserved for future upload workflow behavior. Newly uploaded images currently stay in the queue after generation until they are approved.', 'dynamic-alt-tags' ) . '</p>';
@@ -441,9 +465,59 @@ class WPAI_Alt_Text_Settings {
 
 		$type = 'text';
 		$step = '';
-		if ( 'batch_size' === $id ) {
-			$type = 'number';
+
+		if ( 'background_process_interval' === $id ) {
+			$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
+
+			printf(
+				'<select id="%1$s" name="%2$s">',
+				esc_attr( $field_id ),
+				esc_attr( $name )
+			);
+
+			foreach ( range( 5, 60, 5 ) as $minutes ) {
+				printf(
+					'<option value="%1$d" %2$s>%3$s</option>',
+					(int) $minutes,
+					selected( absint( $options[ $id ] ), (int) $minutes, false ),
+					esc_html(
+						sprintf(
+							/* translators: %d minute interval */
+							_n( 'Every %d minute', 'Every %d minutes', (int) $minutes, 'dynamic-alt-tags' ),
+							(int) $minutes
+						)
+					)
+				);
+			}
+
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Choose how often queued items may be processed automatically in the background.', 'dynamic-alt-tags' ) . '</p>';
+			return;
 		}
+
+		if ( 'background_batch_size' === $id ) {
+			$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
+
+			printf(
+				'<select id="%1$s" name="%2$s">',
+				esc_attr( $field_id ),
+				esc_attr( $name )
+			);
+
+			foreach ( range( 1, 20 ) as $count ) {
+				printf(
+					'<option value="%1$d" %2$s>%3$d</option>',
+					(int) $count,
+					selected( absint( $options[ $id ] ), (int) $count, false ),
+					(int) $count
+				);
+			}
+
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Choose how many images can be processed during each background run.', 'dynamic-alt-tags' ) . '</p>';
+			return;
+		}
+
 		if ( 'min_confidence' === $id ) {
 			$type = 'number';
 			$step = ' step="0.01" min="0" max="1"';

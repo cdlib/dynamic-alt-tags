@@ -145,6 +145,13 @@ Go to **Media > Dynamic Alt Tags**.
 - Manual queue runs and bulk processing are capped to reduce request spikes.
 - Failed items use retry backoff instead of immediate repeated retries.
 - Provider-wide quota or resource failures pause processing instead of continuing to flood requests.
+- Background processing is off by default and can be enabled with configurable WP-Cron frequency and per-run limits.
+
+## Background Processing
+
+- Background processing is optional and disabled by default.
+- When enabled, WP-Cron can process queued items automatically using the selected frequency and images-per-run settings.
+- If you are running into provider usage limits, it is recommended to leave background processing turned off.
 
 ## Changelog
 
@@ -153,6 +160,7 @@ Go to **Media > Dynamic Alt Tags**.
 - Bump version to 1.0.6
 - Align self-hosted updater package metadata with the 1.0.6 release build
 - Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows
+- Add background processing settings with configurable WP-Cron frequency and images-per-run limits, off by default
 
 ### 1.0.5
 
