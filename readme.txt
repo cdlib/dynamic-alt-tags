@@ -78,6 +78,10 @@ Top actions:
 * `Generate Alt Text For Queued`
 * `Refresh`
 
+Notes:
+* `Run Backfill` only scans for images with empty alt text and adds them to the queue. It does not call the provider by itself.
+* `Generate Alt Text For Queued` processes queued items visible on the current Active Queue page.
+
 Bulk actions:
 * `Approve`
 * `Skip Image`
@@ -179,6 +183,7 @@ Behavior:
 = 1.0.6 =
 * Bump version to 1.0.6.
 * Keep self-hosted updater package metadata aligned with the 1.0.6 release build.
+* Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows.
 
 = 1.0.5 =
 * Prepare the first stable 1.0.x release of Dynamic Alt Tags.

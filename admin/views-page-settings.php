@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $notice = isset( $_GET['notice'] ) ? sanitize_key( wp_unslash( $_GET['notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $active_tab = 'settings';
-if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial', 'process_error', 'provider_test', 'history_cleared' ), true ) ) {
+if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleared' ), true ) ) {
 	$active_tab = 'tools';
 } elseif ( 'metrics_reset' === $notice ) {
 	$active_tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'metrics'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -32,49 +32,6 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				);
 				?>
 			</p>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( 'process_done' === $notice ) : ?>
-		<div class="notice notice-success is-dismissible">
-			<p>
-				<?php
-				printf(
-					esc_html__( 'Manual processing finished. %d items processed.', 'dynamic-alt-tags' ),
-					isset( $_GET['processed'] ) ? absint( $_GET['processed'] ) : 0 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				);
-				?>
-			</p>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( 'process_partial' === $notice ) : ?>
-		<?php
-		$process_msg_raw     = isset( $_GET['process_msg'] ) ? wp_unslash( $_GET['process_msg'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended
-		$process_partial_msg = '' !== $process_msg_raw ? sanitize_text_field( rawurldecode( (string) $process_msg_raw ) ) : '';
-		?>
-		<div class="notice notice-warning is-dismissible">
-			<p>
-				<?php
-				printf(
-					esc_html__( 'Processing stopped early after %d items. Run Process Queue Now again to continue.', 'dynamic-alt-tags' ),
-					isset( $_GET['processed'] ) ? absint( $_GET['processed'] ) : 0 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				);
-				?>
-			</p>
-			<?php if ( '' !== $process_partial_msg ) : ?>
-				<p><?php echo esc_html( $process_partial_msg ); ?></p>
-			<?php endif; ?>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( 'process_error' === $notice ) : ?>
-		<?php
-		$process_msg_raw   = isset( $_GET['process_msg'] ) ? wp_unslash( $_GET['process_msg'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized,WordPress.Security.NonceVerification.Recommended
-		$process_error_msg = '' !== $process_msg_raw ? sanitize_text_field( rawurldecode( (string) $process_msg_raw ) ) : __( 'No items were processed.', 'dynamic-alt-tags' );
-		?>
-		<div class="notice notice-error is-dismissible">
-			<p><?php echo esc_html( $process_error_msg ); ?></p>
 		</div>
 	<?php endif; ?>
 
@@ -268,16 +225,6 @@ if ( in_array( $notice, array( 'backfill_done', 'process_done', 'process_partial
 				<input type="hidden" name="action" value="ai_alt_run_backfill" />
 				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
 				<?php submit_button( __( 'Run Backfill', 'dynamic-alt-tags' ), 'secondary', 'submit', false ); ?>
-			</form>
-
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block;" id="ai-alt-process-form">
-				<input type="hidden" name="action" value="ai_alt_process_now" />
-				<?php wp_nonce_field( 'ai_alt_tools_action', 'ai_alt_tools_nonce' ); ?>
-				<div class="ai-alt-progress-wrap" id="ai-alt-progress-wrap" hidden>
-					<div class="ai-alt-progress-bar" id="ai-alt-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
-				</div>
-				<p class="description" id="ai-alt-progress-message" aria-live="polite"></p>
-				<?php submit_button( __( 'Process Queue Now', 'dynamic-alt-tags' ), 'secondary', 'ai_alt_process_submit', false ); ?>
 			</form>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline-block; margin-left:8px;">

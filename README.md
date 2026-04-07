@@ -114,6 +114,8 @@ Go to **Media > Dynamic Alt Tags**.
 - `View Image`: open the source image
 - Top actions: `Run Backfill`, `Generate Alt Text For Queued`, `Refresh`
 - Bulk actions: `Approve`, `Skip Image`, `Generate Alt Text`
+- `Run Backfill` only scans for images with empty alt text and adds them to the queue. It does not call the provider by itself.
+- `Generate Alt Text For Queued` processes queued items visible on the current Active Queue page.
 
 #### Search
 
@@ -150,6 +152,7 @@ Go to **Media > Dynamic Alt Tags**.
 
 - Bump version to 1.0.6
 - Align self-hosted updater package metadata with the 1.0.6 release build
+- Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows
 
 ### 1.0.5
 

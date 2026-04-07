@@ -126,13 +126,10 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
 		add_action( 'admin_post_ai_alt_run_backfill', array( $this->admin, 'handle_run_backfill' ) );
 		add_action( 'admin_post_ai_alt_run_backfill_queue', array( $this->admin, 'handle_run_backfill_queue' ) );
-		add_action( 'admin_post_ai_alt_process_now', array( $this->admin, 'handle_process_now' ) );
-		add_action( 'admin_post_ai_alt_process_now_queue', array( $this->admin, 'handle_process_now_queue' ) );
 		add_action( 'admin_post_ai_alt_clear_history_queue', array( $this->admin, 'handle_clear_history_queue' ) );
 		add_action( 'admin_post_ai_alt_reset_metrics', array( $this->admin, 'handle_reset_metrics' ) );
 		add_action( 'admin_post_ai_alt_test_connection', array( $this->admin, 'handle_test_connection' ) );
 		add_action( 'admin_post_ai_alt_queue_action', array( $this->admin, 'handle_queue_action' ) );
-		add_action( 'wp_ajax_ai_alt_process_now_ajax', array( $this->admin, 'handle_process_now_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_process_ajax', array( $this->admin, 'handle_queue_process_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_load_more_ajax', array( $this->admin, 'handle_queue_load_more_ajax' ) );
 		add_action( 'wp_ajax_ai_alt_queue_add_no_alt_ajax', array( $this->admin, 'handle_queue_add_no_alt_ajax' ) );

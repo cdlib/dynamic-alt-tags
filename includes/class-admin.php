@@ -128,8 +128,6 @@ class WPAI_Alt_Text_Admin {
 			'aiAltAdmin',
 				array(
 					'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
-					'settingsBatchSize'  => isset( $options['batch_size'] ) ? max( 1, min( self::MANUAL_PROCESS_RUN_CAP, absint( $options['batch_size'] ) ) ) : 5,
-					'processNowNonce'    => wp_create_nonce( 'ai_alt_process_now_ajax' ),
 					'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 					'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
 					'queueAddNoAltNonce' => wp_create_nonce( 'ai_alt_queue_add_no_alt_ajax' ),
@@ -316,92 +314,6 @@ class WPAI_Alt_Text_Admin {
 	}
 
 	/**
-	 * Process now.
-	 *
-	 * @return void
-	 */
-	public function handle_process_now() {
-		if ( ! $this->current_user_can_view_settings() ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
-		}
-
-		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
-
-		$options   = $this->settings->get_options();
-		$before    = $this->queue_repo->get_active_status_counts();
-		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
-		$after     = $this->queue_repo->get_active_status_counts();
-
-		if ( $processed > 0 ) {
-			$redirect = add_query_arg(
-				array(
-					'page'      => 'ai-alt-text-settings',
-					'notice'    => 'process_done',
-					'processed' => $processed,
-				),
-				admin_url( 'options-general.php' )
-			);
-		} else {
-			$message  = $this->get_zero_processed_message( $before, $after );
-			$redirect = add_query_arg(
-				array(
-					'page'        => 'ai-alt-text-settings',
-					'notice'      => 'process_error',
-					'process_msg' => rawurlencode( $message ),
-				),
-				admin_url( 'options-general.php' )
-			);
-		}
-
-		wp_safe_redirect( $redirect );
-		exit;
-	}
-
-	/**
-	 * Process now from Queue page.
-	 *
-	 * @return void
-	 */
-	public function handle_process_now_queue() {
-		if ( ! $this->current_user_can_view_queue() ) {
-			wp_die( esc_html__( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ) );
-		}
-
-		check_admin_referer( 'ai_alt_tools_action', 'ai_alt_tools_nonce' );
-
-		$options   = $this->settings->get_options();
-		$before    = $this->queue_repo->get_active_status_counts();
-		$processed = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
-		$after     = $this->queue_repo->get_active_status_counts();
-
-		if ( $processed > 0 ) {
-			$redirect = add_query_arg(
-				array(
-					'page'      => 'ai-alt-text-queue',
-					'notice'    => 'queue_batch_done',
-					'processed' => $processed,
-					'view'      => 'active',
-				),
-				admin_url( 'upload.php' )
-			);
-		} else {
-			$message  = $this->get_zero_processed_message( $before, $after );
-			$redirect = add_query_arg(
-				array(
-					'page'      => 'ai-alt-text-queue',
-					'notice'    => 'queue_error',
-					'queue_msg' => rawurlencode( $message ),
-					'view'      => 'active',
-				),
-				admin_url( 'upload.php' )
-			);
-		}
-
-		wp_safe_redirect( $redirect );
-		exit;
-	}
-
-	/**
 	 * Delete all history rows from Queue page.
 	 *
 	 * @return void
@@ -454,52 +366,6 @@ class WPAI_Alt_Text_Admin {
 
 		wp_safe_redirect( $redirect );
 		exit;
-	}
-
-	/**
-	 * Process now via AJAX.
-	 *
-	 * @return void
-	 */
-	public function handle_process_now_ajax() {
-		if ( ! $this->current_user_can_view_queue() ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'You do not have permission to perform this action.', 'dynamic-alt-tags' ),
-				),
-				403
-			);
-		}
-
-		check_ajax_referer( 'ai_alt_process_now_ajax' );
-
-		$options             = $this->settings->get_options();
-		$started_at          = current_time( 'mysql' );
-		$before              = $this->queue_repo->get_active_status_counts();
-		$batch_size          = isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 5;
-		$processed           = $this->processor->process_batch( min( max( 1, $batch_size ), self::MANUAL_PROCESS_RUN_CAP ) );
-		$after               = $this->queue_repo->get_active_status_counts();
-		$message             = '';
-		$provider_failure    = $this->get_latest_provider_wide_failure( $started_at );
-		$remaining_claimable = isset( $after['queued'] ) ? absint( $after['queued'] ) : 0;
-		$has_more            = $remaining_claimable > 0;
-
-		if ( $provider_failure['message'] ) {
-			$message = $provider_failure['message'];
-		} elseif ( $processed <= 0 ) {
-			$message = $this->get_zero_processed_message( $before, $after );
-		}
-
-		wp_send_json_success(
-			array(
-				'processed'           => $processed,
-				'message'             => $message,
-				'remaining_claimable' => $remaining_claimable,
-				'has_more'            => $has_more,
-				'provider_wide'       => $provider_failure['provider_wide'],
-				'provider_error_code' => $provider_failure['code'],
-			)
-		);
 	}
 
 	/**
