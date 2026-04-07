@@ -1765,6 +1765,7 @@
 				'test_status',
 				'test_msg',
 				'queue_msg',
+				'queue_refresh',
 				'process_msg',
 				'settings-updated',
 				'_wp_http_referer'

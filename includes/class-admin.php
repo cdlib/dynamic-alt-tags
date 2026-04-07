@@ -1478,6 +1478,8 @@ class WPAI_Alt_Text_Admin {
 
 		$allowed_actions = array( 'approve', 'reject', 'skip', 'process', 'requeue' );
 		$updated_count   = 0;
+		$bulk_action     = '';
+		$requeued_attachment_ids = array();
 		$return_view     = isset( $_POST['return_view'] ) ? sanitize_key( wp_unslash( $_POST['return_view'] ) ) : '';
 		$return_view     = in_array( $return_view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $return_view : '';
 		if ( 'browse' === $return_view ) {
@@ -1499,8 +1501,10 @@ class WPAI_Alt_Text_Admin {
 
 			$bulk_final_alt_raw = isset( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
-			$alt  = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
-			$applied = $this->apply_queue_action( $row_id, $action, $alt );
+			$alt                = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
+			$row                = $this->queue_repo->get_row( $row_id );
+			$attachment_id      = is_array( $row ) && ! empty( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
+			$applied            = $this->apply_queue_action( $row_id, $action, $alt );
 			$updated_count = $applied ? 1 : 0;
 
 			$notice = 'queue_updated';
@@ -1515,6 +1519,11 @@ class WPAI_Alt_Text_Admin {
 			);
 			if ( '' !== $return_view ) {
 				$redirect_args['view'] = $return_view;
+			}
+			if ( 'requeue' === $action && $applied && $attachment_id > 0 ) {
+				$redirect_args['view']          = 'active';
+				$redirect_args['queued_ids']    = (string) $attachment_id;
+				$redirect_args['queue_refresh'] = (string) time();
 			}
 			$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
 
@@ -1573,8 +1582,13 @@ class WPAI_Alt_Text_Admin {
 			$alts               = is_array( $bulk_final_alt_raw ) ? $bulk_final_alt_raw : array();
 			foreach ( $selected_ids as $row_id ) {
 				$alt = isset( $alts[ $row_id ] ) ? sanitize_text_field( (string) $alts[ $row_id ] ) : '';
+				$row = $this->queue_repo->get_row( $row_id );
+				$attachment_id = is_array( $row ) && ! empty( $row['attachment_id'] ) ? absint( $row['attachment_id'] ) : 0;
 				if ( $this->apply_queue_action( $row_id, $bulk_action, $alt ) ) {
 					++$updated_count;
+					if ( 'requeue' === $bulk_action && $attachment_id > 0 ) {
+						$requeued_attachment_ids[] = $attachment_id;
+					}
 				}
 			}
 		}
@@ -1586,6 +1600,11 @@ class WPAI_Alt_Text_Admin {
 		);
 		if ( '' !== $return_view ) {
 			$redirect_args['view'] = $return_view;
+		}
+		if ( 'requeue' === $bulk_action && ! empty( $requeued_attachment_ids ) ) {
+			$redirect_args['view']          = 'active';
+			$redirect_args['queued_ids']    = implode( ',', array_values( array_unique( array_map( 'absint', $requeued_attachment_ids ) ) ) );
+			$redirect_args['queue_refresh'] = (string) time();
 		}
 		$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
 
