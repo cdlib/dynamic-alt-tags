@@ -1880,7 +1880,12 @@
 
 			var settingsTotalProcessed = 0;
 			var settingsIterations = 0;
-			var settingsMaxIterations = 25;
+			var settingsRunCap = 20;
+			var settingsBatchSize = 5;
+			if (window.aiAltAdmin && window.aiAltAdmin.settingsBatchSize) {
+				settingsBatchSize = Math.max(1, Number(window.aiAltAdmin.settingsBatchSize) || 5);
+			}
+			var settingsMaxIterations = Math.max(1, Math.ceil(settingsRunCap / settingsBatchSize));
 			var settingsLastDetailMessage = '';
 
 			function finishSettingsSuccess(processedCount, noticeType, messageText, extraArgs) {
@@ -1964,7 +1969,7 @@
 							throw createProviderWideError(settingsLastDetailMessage || i18n.providerPaused || i18n.error || 'Queue processing failed. Please try again.');
 						}
 
-						if (chunkProcessed > 0 && hasMore && settingsIterations < settingsMaxIterations) {
+						if (chunkProcessed > 0 && hasMore && settingsIterations < settingsMaxIterations && settingsTotalProcessed < settingsRunCap) {
 							var processingMessage = i18n.processing || 'Processing queue...';
 							settingsProgressMessage.textContent = processingMessage + ' ' + settingsTotalProcessed + ' processed so far.';
 							return runSettingsChunk();
@@ -1973,7 +1978,7 @@
 						if (settingsTotalProcessed > 0) {
 							var doneMessage = i18n.success || 'Manual processing finished. %d items processed.';
 							var partialMessage = i18n.partial || 'Processing stopped early after %d items. You can run it again to continue.';
-							if (hasMore || settingsIterations >= settingsMaxIterations) {
+							if (hasMore || settingsIterations >= settingsMaxIterations || settingsTotalProcessed >= settingsRunCap) {
 								finishSettingsSuccess(settingsTotalProcessed, 'process_partial', partialMessage.replace('%d', String(settingsTotalProcessed)));
 								return;
 							}
@@ -2040,6 +2045,13 @@
 
 		var rowIds = getSelectedQueueRowIds(form);
 		if (rowIds.length < 1) {
+			return;
+		}
+
+		var bulkSelectionCap = 20;
+		if (rowIds.length > bulkSelectionCap) {
+			event.preventDefault();
+			setQueueProgress(100, i18n.bulkSelectionLimit || ('Select no more than ' + bulkSelectionCap + ' items for bulk processing at one time.'), 'error');
 			return;
 		}
 

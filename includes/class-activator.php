@@ -116,7 +116,7 @@ class WPAI_Alt_Text_Activator {
 				'cloudflare_token'    => '',
 				'worker_url'          => '',
 				'use_url_mode'        => 0,
-				'batch_size'          => 10,
+				'batch_size'          => 5,
 				'min_confidence'      => 0.70,
 				'auto_apply_new_uploads' => 0,
 				'sync_title_from_alt' => 0,

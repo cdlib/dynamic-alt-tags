@@ -11,6 +11,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class WPAI_Alt_Text_Admin {
 	/**
+	 * Maximum total items a single manual Process Queue run should handle.
+	 *
+	 * @var int
+	 */
+	const MANUAL_PROCESS_RUN_CAP = 20;
+
+	/**
+	 * Maximum queue items allowed in one bulk manual process action.
+	 *
+	 * @var int
+	 */
+	const BULK_PROCESS_SELECTION_CAP = 20;
+
+	/**
 	 * Option key for latest connection check.
 	 *
 	 * @var string
@@ -114,6 +128,7 @@ class WPAI_Alt_Text_Admin {
 			'aiAltAdmin',
 				array(
 					'ajaxUrl'            => admin_url( 'admin-ajax.php' ),
+					'settingsBatchSize'  => isset( $options['batch_size'] ) ? max( 1, min( self::MANUAL_PROCESS_RUN_CAP, absint( $options['batch_size'] ) ) ) : 5,
 					'processNowNonce'    => wp_create_nonce( 'ai_alt_process_now_ajax' ),
 					'queueProcessNonce'  => wp_create_nonce( 'ai_alt_queue_process_ajax' ),
 					'queueLoadMoreNonce' => wp_create_nonce( 'ai_alt_queue_load_more_ajax' ),
@@ -130,6 +145,11 @@ class WPAI_Alt_Text_Admin {
 					'error'              => __( 'Queue processing failed. Please try again.', 'dynamic-alt-tags' ),
 						'partial'            => __( 'Processing stopped early after %d items. You can run it again to continue.', 'dynamic-alt-tags' ),
 						'providerPaused'     => __( 'Processing paused because the provider is temporarily unavailable.', 'dynamic-alt-tags' ),
+						'bulkSelectionLimit' => sprintf(
+							/* translators: %d max selected rows */
+							__( 'Select no more than %d items for bulk processing at one time.', 'dynamic-alt-tags' ),
+							self::BULK_PROCESS_SELECTION_CAP
+						),
 						'rowProcessing'      => __( 'Processing image...', 'dynamic-alt-tags' ),
 						'rowSuccess'         => __( 'Image successfully processed', 'dynamic-alt-tags' ),
 						'rowError'           => __( 'Image processing failed. Please try again.', 'dynamic-alt-tags' ),
@@ -454,7 +474,8 @@ class WPAI_Alt_Text_Admin {
 		$options             = $this->settings->get_options();
 		$started_at          = current_time( 'mysql' );
 		$before              = $this->queue_repo->get_active_status_counts();
-		$processed           = $this->processor->process_batch( isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 10 );
+		$batch_size          = isset( $options['batch_size'] ) ? absint( $options['batch_size'] ) : 5;
+		$processed           = $this->processor->process_batch( min( max( 1, $batch_size ), self::MANUAL_PROCESS_RUN_CAP ) );
 		$after               = $this->queue_repo->get_active_status_counts();
 		$message             = '';
 		$provider_failure    = $this->get_latest_provider_wide_failure( $started_at );
@@ -1656,6 +1677,27 @@ class WPAI_Alt_Text_Admin {
 			$selected_ids     = array_values( array_filter( array_map( 'absint', $selected_ids ) ) );
 			if ( empty( $selected_ids ) ) {
 				wp_die( esc_html__( 'No queue items selected.', 'dynamic-alt-tags' ) );
+			}
+
+			if ( 'process' === $bulk_action && count( $selected_ids ) > self::BULK_PROCESS_SELECTION_CAP ) {
+				$redirect_args = array(
+					'page'      => 'ai-alt-text-queue',
+					'notice'    => 'queue_error',
+					'queue_msg' => rawurlencode(
+						sprintf(
+							/* translators: %d max selected rows */
+							__( 'Select no more than %d items for bulk processing at one time.', 'dynamic-alt-tags' ),
+							self::BULK_PROCESS_SELECTION_CAP
+						)
+					),
+				);
+				if ( '' !== $return_view ) {
+					$redirect_args['view'] = $return_view;
+				}
+				$redirect = add_query_arg( $redirect_args, admin_url( 'upload.php' ) );
+
+				wp_safe_redirect( $redirect );
+				exit;
 			}
 
 			$bulk_final_alt_raw = isset( $_POST['bulk_final_alt'] ) ? wp_unslash( $_POST['bulk_final_alt'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized

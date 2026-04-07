@@ -37,7 +37,7 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => '',
 			'worker_url'          => '',
 			'use_url_mode'        => 0,
-			'batch_size'          => 10,
+			'batch_size'          => 5,
 			'min_confidence'      => 0.70,
 			'auto_apply_new_uploads' => 0,
 			'sync_title_from_alt' => 0,
@@ -261,7 +261,7 @@ class WPAI_Alt_Text_Settings {
 			$current['cloudflare_token'] = '' === $token ? '' : sanitize_text_field( $token );
 		}
 
-		$current['batch_size'] = isset( $input['batch_size'] ) ? max( 1, min( 50, absint( $input['batch_size'] ) ) ) : 10;
+		$current['batch_size'] = isset( $input['batch_size'] ) ? max( 1, min( 20, absint( $input['batch_size'] ) ) ) : 5;
 
 		$current['min_confidence'] = isset( $input['min_confidence'] ) ? (float) $input['min_confidence'] : 0.70;
 		$current['min_confidence'] = max( 0.00, min( 1.00, $current['min_confidence'] ) );
