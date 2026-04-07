@@ -146,6 +146,11 @@ Go to **Media > Dynamic Alt Tags**.
 
 ## Changelog
 
+### 1.0.6
+
+- Bump version to 1.0.6
+- Align self-hosted updater package metadata with the 1.0.6 release build
+
 ### 1.0.5
 
 - Prepare the first stable 1.0.x release of Dynamic Alt Tags

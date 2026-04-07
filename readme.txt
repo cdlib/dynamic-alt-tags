@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -176,6 +176,10 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.0.6 =
+* Bump version to 1.0.6.
+* Keep self-hosted updater package metadata aligned with the 1.0.6 release build.
+
 = 1.0.5 =
 * Prepare the first stable 1.0.x release of Dynamic Alt Tags.
 * Document current queue, access, metrics, and self-hosted update workflows.
