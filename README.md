@@ -17,7 +17,7 @@ This project is open source under the `MIT` license. See [`LICENSE`](LICENSE) fo
 - Per-image actions directly inside WordPress media workflows
 - Safer queue processing with capped manual runs, retry backoff, and provider pause handling
 - Support for self-hosted infrastructure
-- Optional title and description sync
+- Optional title, caption, and description sync
 - Live metrics with reset tools, including `Total images processed today`
 - History bulk `Re-queue` support
 - Self-hosted plugin updates
@@ -161,6 +161,7 @@ Go to **Media > Dynamic Alt Tags**.
 - Align self-hosted updater package metadata with the 1.0.6 release build
 - Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows
 - Add background processing settings with configurable WP-Cron frequency and images-per-run limits, off by default
+- Add an optional `Sync Alt Text to Attachment Caption` setting, off by default
 
 ### 1.0.5
 

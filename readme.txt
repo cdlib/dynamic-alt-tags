@@ -28,7 +28,7 @@ The plugin is designed for editorial teams that need fast generation plus contro
 * Focused Active Queue view after bulk-adding items from Search.
 * Attachment Details button to Generate Alt Text directly into the Alternative Text field.
 * Safer queue processing with capped manual runs, retry backoff, and provider pause handling.
-* Sync options for attachment title and description.
+* Sync options for attachment title, caption, and description.
 * Queue dashboard and settings metrics, including `Total images processed today`, with Reset Metrics action.
 * Self-hosted plugin update support with native update-page icon metadata.
 * Mobile/tablet responsive queue layout improvements.
@@ -140,6 +140,7 @@ Behavior:
 * `Use URL Mode - Send Image URL`
 * `Auto-Approve New Uploads`
 * `Sync Alt Text to Attachment Title`
+* `Sync Alt Text to Attachment Caption`
 * `Sync Alt Text to Attachment Description`
 * `Search Media Taxonomy`
 * `Overwrite Existing Alt Text`
@@ -188,6 +189,7 @@ Behavior:
 * Keep self-hosted updater package metadata aligned with the 1.0.6 release build.
 * Remove the Settings Tools page `Process Queue Now` action in favor of queue-page processing workflows.
 * Add background processing settings with configurable WP-Cron frequency and images-per-run limits, off by default.
+* Add an optional `Sync Alt Text to Attachment Caption` setting, off by default.
 
 = 1.0.5 =
 * Prepare the first stable 1.0.x release of Dynamic Alt Tags.
