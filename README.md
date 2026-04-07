@@ -84,6 +84,22 @@ This project is usable and actively maintained.
 
 Developer tooling is Composer-based and currently includes PHPCS, WPCS, and PHP compatibility checks.
 
+## Release Build
+
+Run the release script from the plugin root:
+
+```bash
+cd /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags
+./build-release.sh
+```
+
+The script:
+
+- reads the version from `dynamic-alt-tags.php`
+- builds `dynamic-alt-tags-<version>.zip`
+- writes the zip to `/Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/plugin-updates/`
+- copies the current `info.json` from the config repo into that same `plugin-updates` directory
+
 ## Contributing
 
 Pull requests are welcome. For setup, contribution expectations, and testing guidance, see [`CONTRIBUTING.md`](CONTRIBUTING.md).
