@@ -15,9 +15,10 @@ This project is open source under the `MIT` license. See [`LICENSE`](LICENSE) fo
 - Active Queue review workflow with approve, skip, and generate actions
 - Human review before approval when you want it
 - Per-image actions directly inside WordPress media workflows
+- Safer queue processing with capped manual runs, retry backoff, and provider pause handling
 - Support for self-hosted infrastructure
 - Optional title and description sync
-- Live metrics with reset tools
+- Live metrics with reset tools, including `Total images processed today`
 - History bulk `Re-queue` support
 - Self-hosted plugin updates
 
@@ -131,6 +132,17 @@ Go to **Media > Dynamic Alt Tags**.
 - `generated`: suggested alt text is applied
 - `processing`: try-again message is shown
 - `skipped`, `approved`, `rejected`: automatically requeued and processed
+
+## Metrics Notes
+
+- `Total images processed` counts unique attachment IDs, not raw processing attempts.
+- `Total images processed today` uses the current Los Angeles day for the plugin’s daily metrics.
+
+## Processing Safeguards
+
+- Manual queue runs and bulk processing are capped to reduce request spikes.
+- Failed items use retry backoff instead of immediate repeated retries.
+- Provider-wide quota or resource failures pause processing instead of continuing to flood requests.
 
 ## Changelog
 

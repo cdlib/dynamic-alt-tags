@@ -27,8 +27,9 @@ The plugin is designed for editorial teams that need fast generation plus contro
 * Search tab with grid-based media browser, live filters, and bulk selection.
 * Focused Active Queue view after bulk-adding items from Search.
 * Attachment Details button to Generate Alt Text directly into the Alternative Text field.
+* Safer queue processing with capped manual runs, retry backoff, and provider pause handling.
 * Sync options for attachment title and description.
-* Queue dashboard and settings metrics with Reset Metrics action.
+* Queue dashboard and settings metrics, including `Total images processed today`, with Reset Metrics action.
 * Self-hosted plugin update support with native update-page icon metadata.
 * Mobile/tablet responsive queue layout improvements.
 * Role-based access control for queue visibility and actions.
@@ -141,7 +142,13 @@ Behavior:
 
 === Metrics Notes ===
 * `Total images processed` counts unique attachment IDs, not raw processing attempts.
+* `Total images processed today` uses the current Los Angeles day and resets at the local day boundary used by the plugin metrics.
 * If you had older metrics from before unique counting was introduced, use `Reset Metrics` to start a clean baseline.
+
+=== Processing Safeguards ===
+* Manual queue runs and bulk processing are capped to reduce request spikes.
+* Failed items use retry backoff instead of immediate repeated retries.
+* Provider-wide quota or resource failures pause processing rather than continuing to flood requests.
 
 === Troubleshooting ===
 ==== Provider Test Fails ====
