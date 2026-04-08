@@ -104,6 +104,9 @@ $average_provider_ms      = $provider_call_count > 0 ? $total_provider_ms / $pro
 $last_processed_at        = isset( $metrics['last_processed_at'] ) ? sanitize_text_field( (string) $metrics['last_processed_at'] ) : '';
 $last_processed_display   = '';
 $processed_today          = isset( $daily_metrics['daily_images_processed'] ) ? absint( $daily_metrics['daily_images_processed'] ) : 0;
+$processed_this_week      = isset( $metrics['weekly_images_processed'] ) ? absint( $metrics['weekly_images_processed'] ) : 0;
+$processed_this_month     = isset( $metrics['monthly_images_processed'] ) ? absint( $metrics['monthly_images_processed'] ) : 0;
+$processed_this_year      = isset( $metrics['yearly_images_processed'] ) ? absint( $metrics['yearly_images_processed'] ) : 0;
 if ( '' !== $last_processed_at ) {
 	$last_processed_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_processed_at );
 	if ( ! is_string( $last_processed_display ) || '' === $last_processed_display ) {
@@ -280,6 +283,18 @@ if ( '' !== $last_processed_at ) {
 				<div class="ai-alt-metric-card">
 					<strong><?php esc_html_e( 'Total images processed today', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-today"><?php echo esc_html( number_format_i18n( $processed_today ) ); ?></span>
+				</div>
+				<div class="ai-alt-metric-card">
+					<strong><?php esc_html_e( 'Total images processed this week', 'dynamic-alt-tags' ); ?></strong>
+					<span id="ai-alt-metric-processed-this-week"><?php echo esc_html( number_format_i18n( $processed_this_week ) ); ?></span>
+				</div>
+				<div class="ai-alt-metric-card">
+					<strong><?php esc_html_e( 'Total images processed this month', 'dynamic-alt-tags' ); ?></strong>
+					<span id="ai-alt-metric-processed-this-month"><?php echo esc_html( number_format_i18n( $processed_this_month ) ); ?></span>
+				</div>
+				<div class="ai-alt-metric-card">
+					<strong><?php esc_html_e( 'Total images processed this year', 'dynamic-alt-tags' ); ?></strong>
+					<span id="ai-alt-metric-processed-this-year"><?php echo esc_html( number_format_i18n( $processed_this_year ) ); ?></span>
 				</div>
 			</div>
 

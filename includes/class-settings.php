@@ -86,6 +86,9 @@ class WPAI_Alt_Text_Settings {
 	 */
 	public function get_metrics() {
 		$current_day_key = $this->get_los_angeles_day_key();
+		$current_week_key = $this->get_los_angeles_week_key();
+		$current_month_key = $this->get_los_angeles_month_key();
+		$current_year_key = $this->get_los_angeles_year_key();
 		$defaults = array(
 			'total_images_processed'    => 0,
 			'processed_attachment_ids'  => array(),
@@ -101,6 +104,15 @@ class WPAI_Alt_Text_Settings {
 			'daily_images_processed'    => 0,
 			'daily_provider_call_count' => 0,
 			'daily_processed_attachment_ids' => array(),
+			'weekly_metrics_date'       => $current_week_key,
+			'weekly_images_processed'   => 0,
+			'weekly_processed_attachment_ids' => array(),
+			'monthly_metrics_date'      => $current_month_key,
+			'monthly_images_processed'  => 0,
+			'monthly_processed_attachment_ids' => array(),
+			'yearly_metrics_date'       => $current_year_key,
+			'yearly_images_processed'   => 0,
+			'yearly_processed_attachment_ids' => array(),
 		);
 
 		$raw = get_option( self::METRICS_OPTION_KEY, array() );
@@ -143,6 +155,51 @@ class WPAI_Alt_Text_Settings {
 			$metrics['daily_images_processed'] = count( $daily_processed_attachment_ids );
 		}
 
+		$weekly_processed_attachment_ids = isset( $metrics['weekly_processed_attachment_ids'] ) && is_array( $metrics['weekly_processed_attachment_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['weekly_processed_attachment_ids'] ) ) ) )
+			: array();
+		$metrics['weekly_metrics_date']        = is_string( $metrics['weekly_metrics_date'] ) ? sanitize_text_field( $metrics['weekly_metrics_date'] ) : $current_week_key;
+		$metrics['weekly_images_processed']    = max( 0, absint( $metrics['weekly_images_processed'] ) );
+		$metrics['weekly_processed_attachment_ids'] = $weekly_processed_attachment_ids;
+
+		if ( $metrics['weekly_metrics_date'] !== $current_week_key ) {
+			$metrics['weekly_metrics_date']             = $current_week_key;
+			$metrics['weekly_images_processed']         = 0;
+			$metrics['weekly_processed_attachment_ids'] = array();
+		} elseif ( ! empty( $weekly_processed_attachment_ids ) ) {
+			$metrics['weekly_images_processed'] = count( $weekly_processed_attachment_ids );
+		}
+
+		$monthly_processed_attachment_ids = isset( $metrics['monthly_processed_attachment_ids'] ) && is_array( $metrics['monthly_processed_attachment_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['monthly_processed_attachment_ids'] ) ) ) )
+			: array();
+		$metrics['monthly_metrics_date']        = is_string( $metrics['monthly_metrics_date'] ) ? sanitize_text_field( $metrics['monthly_metrics_date'] ) : $current_month_key;
+		$metrics['monthly_images_processed']    = max( 0, absint( $metrics['monthly_images_processed'] ) );
+		$metrics['monthly_processed_attachment_ids'] = $monthly_processed_attachment_ids;
+
+		if ( $metrics['monthly_metrics_date'] !== $current_month_key ) {
+			$metrics['monthly_metrics_date']             = $current_month_key;
+			$metrics['monthly_images_processed']         = 0;
+			$metrics['monthly_processed_attachment_ids'] = array();
+		} elseif ( ! empty( $monthly_processed_attachment_ids ) ) {
+			$metrics['monthly_images_processed'] = count( $monthly_processed_attachment_ids );
+		}
+
+		$yearly_processed_attachment_ids = isset( $metrics['yearly_processed_attachment_ids'] ) && is_array( $metrics['yearly_processed_attachment_ids'] )
+			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['yearly_processed_attachment_ids'] ) ) ) )
+			: array();
+		$metrics['yearly_metrics_date']        = is_string( $metrics['yearly_metrics_date'] ) ? sanitize_text_field( $metrics['yearly_metrics_date'] ) : $current_year_key;
+		$metrics['yearly_images_processed']    = max( 0, absint( $metrics['yearly_images_processed'] ) );
+		$metrics['yearly_processed_attachment_ids'] = $yearly_processed_attachment_ids;
+
+		if ( $metrics['yearly_metrics_date'] !== $current_year_key ) {
+			$metrics['yearly_metrics_date']             = $current_year_key;
+			$metrics['yearly_images_processed']         = 0;
+			$metrics['yearly_processed_attachment_ids'] = array();
+		} elseif ( ! empty( $yearly_processed_attachment_ids ) ) {
+			$metrics['yearly_images_processed'] = count( $yearly_processed_attachment_ids );
+		}
+
 		return $metrics;
 	}
 
@@ -170,6 +227,18 @@ class WPAI_Alt_Text_Settings {
 			$metrics['daily_processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['daily_images_processed'] = count( $metrics['daily_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['weekly_processed_attachment_ids'], true ) ) {
+			$metrics['weekly_processed_attachment_ids'][] = $attachment_id;
+		}
+		$metrics['weekly_images_processed'] = count( $metrics['weekly_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['monthly_processed_attachment_ids'], true ) ) {
+			$metrics['monthly_processed_attachment_ids'][] = $attachment_id;
+		}
+		$metrics['monthly_images_processed'] = count( $metrics['monthly_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['yearly_processed_attachment_ids'], true ) ) {
+			$metrics['yearly_processed_attachment_ids'][] = $attachment_id;
+		}
+		$metrics['yearly_images_processed'] = count( $metrics['yearly_processed_attachment_ids'] );
 		if ( $is_success ) {
 			$metrics['success_count'] += 1;
 		} else {
@@ -205,6 +274,43 @@ class WPAI_Alt_Text_Settings {
 		$now = new DateTimeImmutable( 'now', $tz );
 
 		return $now->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Get the current Los Angeles week key for weekly metrics.
+	 *
+	 * @return string
+	 */
+	private function get_los_angeles_week_key() {
+		$tz  = new DateTimeZone( 'America/Los_Angeles' );
+		$now = new DateTimeImmutable( 'now', $tz );
+		$week_start = $now->modify( '-' . (int) $now->format( 'w' ) . ' days' );
+
+		return $week_start->format( 'Y-m-d' );
+	}
+
+	/**
+	 * Get the current Los Angeles month key for monthly metrics.
+	 *
+	 * @return string
+	 */
+	private function get_los_angeles_month_key() {
+		$tz  = new DateTimeZone( 'America/Los_Angeles' );
+		$now = new DateTimeImmutable( 'now', $tz );
+
+		return $now->format( 'Y-m' );
+	}
+
+	/**
+	 * Get the current Los Angeles year key for yearly metrics.
+	 *
+	 * @return string
+	 */
+	private function get_los_angeles_year_key() {
+		$tz  = new DateTimeZone( 'America/Los_Angeles' );
+		$now = new DateTimeImmutable( 'now', $tz );
+
+		return $now->format( 'Y' );
 	}
 
 	/**
