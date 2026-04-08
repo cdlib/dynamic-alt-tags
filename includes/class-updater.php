@@ -12,13 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 class WPAI_Alt_Text_Updater {
 
 	/**
-	 * Cached remote payload transient key.
-	 *
-	 * @var string
-	 */
-	const REMOTE_INFO_TRANSIENT_KEY = 'wpai_alt_text_update_info';
-
-	/**
 	 * Allowed update package host.
 	 *
 	 * @var string
@@ -206,7 +199,7 @@ class WPAI_Alt_Text_Updater {
 			return $result;
 		}
 
-		$remote_info = $this->get_remote_info( true );
+		$remote_info = $this->get_remote_info();
 		if ( empty( $remote_info['version'] ) ) {
 			return $result;
 		}
@@ -230,17 +223,9 @@ class WPAI_Alt_Text_Updater {
 	/**
 	 * Fetch and normalize remote update info.
 	 *
-	 * @param bool $force_refresh Whether to bypass cache.
 	 * @return array<string,mixed>
 	 */
-	private function get_remote_info( $force_refresh = false ) {
-		if ( ! $force_refresh ) {
-			$cached = get_site_transient( self::REMOTE_INFO_TRANSIENT_KEY );
-			if ( is_array( $cached ) ) {
-				return $cached;
-			}
-		}
-
+	private function get_remote_info() {
 		$response = wp_remote_get(
 			WPAI_ALT_TEXT_UPDATE_INFO_URL,
 			array(
@@ -278,8 +263,6 @@ class WPAI_Alt_Text_Updater {
 			'last_updated'  => isset( $decoded['last_updated'] ) ? sanitize_text_field( (string) $decoded['last_updated'] ) : '',
 			'sections'      => $this->normalize_sections( isset( $decoded['sections'] ) ? $decoded['sections'] : array() ),
 		);
-
-		set_site_transient( self::REMOTE_INFO_TRANSIENT_KEY, $remote_info, HOUR_IN_SECONDS );
 
 		return $remote_info;
 	}
