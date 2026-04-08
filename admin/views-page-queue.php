@@ -87,6 +87,7 @@ if ( $is_search ) {
 $metrics = isset( $metrics ) && is_array( $metrics ) ? $metrics : array();
 $coverage = isset( $coverage ) && is_array( $coverage ) ? $coverage : array();
 $daily_metrics = isset( $daily_metrics ) && is_array( $daily_metrics ) ? $daily_metrics : array();
+$processed_history_chart = isset( $processed_history_chart ) && is_array( $processed_history_chart ) ? $processed_history_chart : array();
 
 $total_images_dashboard   = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
 $images_with_alt          = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
@@ -295,6 +296,24 @@ if ( '' !== $last_processed_at ) {
 				<div class="ai-alt-metric-card">
 					<strong><?php esc_html_e( 'Total images processed this year', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-this-year"><?php echo esc_html( number_format_i18n( $processed_this_year ) ); ?></span>
+				</div>
+			</div>
+
+			<div class="ai-alt-processed-chart" data-chart-series="<?php echo esc_attr( wp_json_encode( $processed_history_chart ) ); ?>">
+				<div class="ai-alt-processed-chart-header">
+					<div>
+						<h3><?php esc_html_e( 'Processed Images Over Time', 'dynamic-alt-tags' ); ?></h3>
+						<p><?php esc_html_e( 'Toggle between day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+					</div>
+					<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
+						<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="week"><?php esc_html_e( 'Week', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="month"><?php esc_html_e( 'Month', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="year"><?php esc_html_e( 'Year', 'dynamic-alt-tags' ); ?></button>
+					</div>
+				</div>
+				<div class="ai-alt-processed-chart-stage">
+					<div class="ai-alt-processed-chart-plot" aria-live="polite"></div>
 				</div>
 			</div>
 

@@ -86,6 +86,7 @@ if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleare
 	}
 
 	$connection_status = isset( $connection_status ) && is_array( $connection_status ) ? $connection_status : array();
+	$processed_history_chart = isset( $processed_history_chart ) && is_array( $processed_history_chart ) ? $processed_history_chart : array();
 	$connection_state  = isset( $connection_status['state'] ) ? sanitize_key( (string) $connection_status['state'] ) : 'unknown';
 	$connection_title  = isset( $connection_status['title'] ) ? sanitize_text_field( (string) $connection_status['title'] ) : __( 'Not Checked', 'dynamic-alt-tags' );
 	$connection_msg    = isset( $connection_status['message'] ) ? sanitize_text_field( (string) $connection_status['message'] ) : __( 'Run "Test Provider Connection" to verify connectivity.', 'dynamic-alt-tags' );
@@ -189,6 +190,24 @@ if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleare
 				<div class="ai-alt-metric-card">
 					<strong><?php esc_html_e( 'Total images processed this year', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-this-year"><?php echo esc_html( number_format_i18n( $processed_this_year ) ); ?></span>
+				</div>
+			</div>
+
+			<div class="ai-alt-processed-chart" data-chart-series="<?php echo esc_attr( wp_json_encode( $processed_history_chart ) ); ?>">
+				<div class="ai-alt-processed-chart-header">
+					<div>
+						<h3><?php esc_html_e( 'Processed Images Over Time', 'dynamic-alt-tags' ); ?></h3>
+						<p><?php esc_html_e( 'Toggle between day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+					</div>
+					<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
+						<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="week"><?php esc_html_e( 'Week', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="month"><?php esc_html_e( 'Month', 'dynamic-alt-tags' ); ?></button>
+						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="year"><?php esc_html_e( 'Year', 'dynamic-alt-tags' ); ?></button>
+					</div>
+				</div>
+				<div class="ai-alt-processed-chart-stage">
+					<div class="ai-alt-processed-chart-plot" aria-live="polite"></div>
 				</div>
 			</div>
 

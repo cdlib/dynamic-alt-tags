@@ -104,15 +104,19 @@ class WPAI_Alt_Text_Settings {
 			'daily_images_processed'    => 0,
 			'daily_provider_call_count' => 0,
 			'daily_processed_attachment_ids' => array(),
+			'daily_history_attachment_ids' => array(),
 			'weekly_metrics_date'       => $current_week_key,
 			'weekly_images_processed'   => 0,
 			'weekly_processed_attachment_ids' => array(),
+			'weekly_history_attachment_ids' => array(),
 			'monthly_metrics_date'      => $current_month_key,
 			'monthly_images_processed'  => 0,
 			'monthly_processed_attachment_ids' => array(),
+			'monthly_history_attachment_ids' => array(),
 			'yearly_metrics_date'       => $current_year_key,
 			'yearly_images_processed'   => 0,
 			'yearly_processed_attachment_ids' => array(),
+			'yearly_history_attachment_ids' => array(),
 		);
 
 		$raw = get_option( self::METRICS_OPTION_KEY, array() );
@@ -154,6 +158,10 @@ class WPAI_Alt_Text_Settings {
 		} elseif ( ! empty( $daily_processed_attachment_ids ) ) {
 			$metrics['daily_images_processed'] = count( $daily_processed_attachment_ids );
 		}
+		$metrics['daily_history_attachment_ids'] = $this->normalize_history_attachment_buckets(
+			isset( $metrics['daily_history_attachment_ids'] ) ? $metrics['daily_history_attachment_ids'] : array(),
+			$this->get_recent_day_keys( 14 )
+		);
 
 		$weekly_processed_attachment_ids = isset( $metrics['weekly_processed_attachment_ids'] ) && is_array( $metrics['weekly_processed_attachment_ids'] )
 			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['weekly_processed_attachment_ids'] ) ) ) )
@@ -169,6 +177,10 @@ class WPAI_Alt_Text_Settings {
 		} elseif ( ! empty( $weekly_processed_attachment_ids ) ) {
 			$metrics['weekly_images_processed'] = count( $weekly_processed_attachment_ids );
 		}
+		$metrics['weekly_history_attachment_ids'] = $this->normalize_history_attachment_buckets(
+			isset( $metrics['weekly_history_attachment_ids'] ) ? $metrics['weekly_history_attachment_ids'] : array(),
+			$this->get_recent_week_keys( 12 )
+		);
 
 		$monthly_processed_attachment_ids = isset( $metrics['monthly_processed_attachment_ids'] ) && is_array( $metrics['monthly_processed_attachment_ids'] )
 			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['monthly_processed_attachment_ids'] ) ) ) )
@@ -184,6 +196,10 @@ class WPAI_Alt_Text_Settings {
 		} elseif ( ! empty( $monthly_processed_attachment_ids ) ) {
 			$metrics['monthly_images_processed'] = count( $monthly_processed_attachment_ids );
 		}
+		$metrics['monthly_history_attachment_ids'] = $this->normalize_history_attachment_buckets(
+			isset( $metrics['monthly_history_attachment_ids'] ) ? $metrics['monthly_history_attachment_ids'] : array(),
+			$this->get_recent_month_keys( 12 )
+		);
 
 		$yearly_processed_attachment_ids = isset( $metrics['yearly_processed_attachment_ids'] ) && is_array( $metrics['yearly_processed_attachment_ids'] )
 			? array_values( array_unique( array_filter( array_map( 'absint', $metrics['yearly_processed_attachment_ids'] ) ) ) )
@@ -199,6 +215,10 @@ class WPAI_Alt_Text_Settings {
 		} elseif ( ! empty( $yearly_processed_attachment_ids ) ) {
 			$metrics['yearly_images_processed'] = count( $yearly_processed_attachment_ids );
 		}
+		$metrics['yearly_history_attachment_ids'] = $this->normalize_history_attachment_buckets(
+			isset( $metrics['yearly_history_attachment_ids'] ) ? $metrics['yearly_history_attachment_ids'] : array(),
+			$this->get_recent_year_keys( 5 )
+		);
 
 		return $metrics;
 	}
@@ -227,18 +247,46 @@ class WPAI_Alt_Text_Settings {
 			$metrics['daily_processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['daily_images_processed'] = count( $metrics['daily_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 ) {
+			$metrics['daily_history_attachment_ids'] = $this->add_attachment_to_history_bucket(
+				isset( $metrics['daily_history_attachment_ids'] ) ? $metrics['daily_history_attachment_ids'] : array(),
+				$this->get_los_angeles_day_key(),
+				$attachment_id
+			);
+		}
 		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['weekly_processed_attachment_ids'], true ) ) {
 			$metrics['weekly_processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['weekly_images_processed'] = count( $metrics['weekly_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 ) {
+			$metrics['weekly_history_attachment_ids'] = $this->add_attachment_to_history_bucket(
+				isset( $metrics['weekly_history_attachment_ids'] ) ? $metrics['weekly_history_attachment_ids'] : array(),
+				$this->get_los_angeles_week_key(),
+				$attachment_id
+			);
+		}
 		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['monthly_processed_attachment_ids'], true ) ) {
 			$metrics['monthly_processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['monthly_images_processed'] = count( $metrics['monthly_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 ) {
+			$metrics['monthly_history_attachment_ids'] = $this->add_attachment_to_history_bucket(
+				isset( $metrics['monthly_history_attachment_ids'] ) ? $metrics['monthly_history_attachment_ids'] : array(),
+				$this->get_los_angeles_month_key(),
+				$attachment_id
+			);
+		}
 		if ( $is_success && $attachment_id > 0 && ! in_array( $attachment_id, $metrics['yearly_processed_attachment_ids'], true ) ) {
 			$metrics['yearly_processed_attachment_ids'][] = $attachment_id;
 		}
 		$metrics['yearly_images_processed'] = count( $metrics['yearly_processed_attachment_ids'] );
+		if ( $is_success && $attachment_id > 0 ) {
+			$metrics['yearly_history_attachment_ids'] = $this->add_attachment_to_history_bucket(
+				isset( $metrics['yearly_history_attachment_ids'] ) ? $metrics['yearly_history_attachment_ids'] : array(),
+				$this->get_los_angeles_year_key(),
+				$attachment_id
+			);
+		}
 		if ( $is_success ) {
 			$metrics['success_count'] += 1;
 		} else {
@@ -262,6 +310,89 @@ class WPAI_Alt_Text_Settings {
 	 */
 	public function reset_metrics() {
 		delete_option( self::METRICS_OPTION_KEY );
+	}
+
+	/**
+	 * Get processed-history chart data grouped by time period.
+	 *
+	 * @return array<string,array<int,array<string,mixed>>>
+	 */
+	public function get_processed_history_chart_data() {
+		$metrics = $this->get_metrics();
+
+		return array(
+			'day'   => $this->build_chart_points(
+				$this->get_recent_day_keys( 14 ),
+				isset( $metrics['daily_history_attachment_ids'] ) && is_array( $metrics['daily_history_attachment_ids'] ) ? $metrics['daily_history_attachment_ids'] : array(),
+				static function ( $key ) {
+					$date = DateTimeImmutable::createFromFormat( 'Y-m-d', (string) $key, new DateTimeZone( 'America/Los_Angeles' ) );
+					if ( false === $date ) {
+						return array(
+							'label'      => (string) $key,
+							'full_label' => (string) $key,
+						);
+					}
+
+					return array(
+						'label'      => $date->format( 'M j' ),
+						'full_label' => $date->format( 'F j, Y' ),
+					);
+				}
+			),
+			'week'  => $this->build_chart_points(
+				$this->get_recent_week_keys( 12 ),
+				isset( $metrics['weekly_history_attachment_ids'] ) && is_array( $metrics['weekly_history_attachment_ids'] ) ? $metrics['weekly_history_attachment_ids'] : array(),
+				static function ( $key ) {
+					$date = DateTimeImmutable::createFromFormat( 'Y-m-d', (string) $key, new DateTimeZone( 'America/Los_Angeles' ) );
+					if ( false === $date ) {
+						return array(
+							'label'      => (string) $key,
+							'full_label' => (string) $key,
+						);
+					}
+
+					$week_end = $date->modify( '+6 days' );
+
+					return array(
+						'label'      => $date->format( 'M j' ),
+						'full_label' => sprintf(
+							/* translators: 1: week start date, 2: week end date */
+							__( 'Week of %1$s to %2$s', 'dynamic-alt-tags' ),
+							$date->format( 'F j, Y' ),
+							$week_end->format( 'F j, Y' )
+						),
+					);
+				}
+			),
+			'month' => $this->build_chart_points(
+				$this->get_recent_month_keys( 12 ),
+				isset( $metrics['monthly_history_attachment_ids'] ) && is_array( $metrics['monthly_history_attachment_ids'] ) ? $metrics['monthly_history_attachment_ids'] : array(),
+				static function ( $key ) {
+					$date = DateTimeImmutable::createFromFormat( 'Y-m', (string) $key, new DateTimeZone( 'America/Los_Angeles' ) );
+					if ( false === $date ) {
+						return array(
+							'label'      => (string) $key,
+							'full_label' => (string) $key,
+						);
+					}
+
+					return array(
+						'label'      => $date->format( 'M Y' ),
+						'full_label' => $date->format( 'F Y' ),
+					);
+				}
+			),
+			'year'  => $this->build_chart_points(
+				$this->get_recent_year_keys( 5 ),
+				isset( $metrics['yearly_history_attachment_ids'] ) && is_array( $metrics['yearly_history_attachment_ids'] ) ? $metrics['yearly_history_attachment_ids'] : array(),
+				static function ( $key ) {
+					return array(
+						'label'      => (string) $key,
+						'full_label' => (string) $key,
+					);
+				}
+			),
+		);
 	}
 
 	/**
@@ -311,6 +442,170 @@ class WPAI_Alt_Text_Settings {
 		$now = new DateTimeImmutable( 'now', $tz );
 
 		return $now->format( 'Y' );
+	}
+
+	/**
+	 * Normalize historical attachment ID buckets and prune to allowed keys.
+	 *
+	 * @param mixed    $history History bucket map.
+	 * @param string[] $allowed_keys Allowed bucket keys.
+	 * @return array<string,array<int,int>>
+	 */
+	private function normalize_history_attachment_buckets( $history, $allowed_keys ) {
+		if ( ! is_array( $history ) ) {
+			return array();
+		}
+
+		$allowed_lookup = array_fill_keys( $allowed_keys, true );
+		$normalized     = array();
+
+		foreach ( $history as $bucket_key => $attachment_ids ) {
+			$bucket_key = sanitize_text_field( (string) $bucket_key );
+			if ( '' === $bucket_key || ! isset( $allowed_lookup[ $bucket_key ] ) || ! is_array( $attachment_ids ) ) {
+				continue;
+			}
+
+			$normalized[ $bucket_key ] = array_values( array_unique( array_filter( array_map( 'absint', $attachment_ids ) ) ) );
+		}
+
+		return $normalized;
+	}
+
+	/**
+	 * Add an attachment ID to a historical metrics bucket.
+	 *
+	 * @param mixed  $history History bucket map.
+	 * @param string $bucket_key Bucket key.
+	 * @param int    $attachment_id Attachment ID.
+	 * @return array<string,array<int,int>>
+	 */
+	private function add_attachment_to_history_bucket( $history, $bucket_key, $attachment_id ) {
+		$bucket_key    = sanitize_text_field( (string) $bucket_key );
+		$attachment_id = absint( $attachment_id );
+		$history       = is_array( $history ) ? $history : array();
+
+		if ( '' === $bucket_key || $attachment_id <= 0 ) {
+			return $history;
+		}
+
+		$current_ids = isset( $history[ $bucket_key ] ) && is_array( $history[ $bucket_key ] ) ? $history[ $bucket_key ] : array();
+		$current_ids = array_values( array_unique( array_filter( array_map( 'absint', $current_ids ) ) ) );
+
+		if ( ! in_array( $attachment_id, $current_ids, true ) ) {
+			$current_ids[] = $attachment_id;
+		}
+
+		$history[ $bucket_key ] = $current_ids;
+
+		return $history;
+	}
+
+	/**
+	 * Build chart points from bucket keys and historical IDs.
+	 *
+	 * @param string[]            $keys Ordered bucket keys.
+	 * @param array<string,mixed> $history History bucket map.
+	 * @param callable            $label_builder Label builder callback.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function build_chart_points( $keys, $history, $label_builder ) {
+		$points = array();
+
+		foreach ( $keys as $key ) {
+			$key = (string) $key;
+			$ids = isset( $history[ $key ] ) && is_array( $history[ $key ] ) ? array_values( array_unique( array_filter( array_map( 'absint', $history[ $key ] ) ) ) ) : array();
+			$labels = call_user_func( $label_builder, $key );
+			$label = is_array( $labels ) && isset( $labels['label'] ) ? (string) $labels['label'] : $key;
+			$full_label = is_array( $labels ) && isset( $labels['full_label'] ) ? (string) $labels['full_label'] : $label;
+
+			$points[] = array(
+				'key'        => $key,
+				'label'      => $label,
+				'full_label' => $full_label,
+				'value'      => count( $ids ),
+			);
+		}
+
+		return $points;
+	}
+
+	/**
+	 * Get recent Los Angeles day keys, oldest first.
+	 *
+	 * @param int $count Number of buckets.
+	 * @return string[]
+	 */
+	private function get_recent_day_keys( $count ) {
+		$count = max( 1, absint( $count ) );
+		$tz    = new DateTimeZone( 'America/Los_Angeles' );
+		$now   = new DateTimeImmutable( 'now', $tz );
+		$keys  = array();
+
+		for ( $offset = $count - 1; $offset >= 0; --$offset ) {
+			$keys[] = $now->modify( '-' . $offset . ' days' )->format( 'Y-m-d' );
+		}
+
+		return $keys;
+	}
+
+	/**
+	 * Get recent Los Angeles week keys, oldest first.
+	 *
+	 * @param int $count Number of buckets.
+	 * @return string[]
+	 */
+	private function get_recent_week_keys( $count ) {
+		$count      = max( 1, absint( $count ) );
+		$tz         = new DateTimeZone( 'America/Los_Angeles' );
+		$now        = new DateTimeImmutable( 'now', $tz );
+		$current    = $now->modify( '-' . (int) $now->format( 'w' ) . ' days' );
+		$keys       = array();
+
+		for ( $offset = $count - 1; $offset >= 0; --$offset ) {
+			$keys[] = $current->modify( '-' . $offset . ' weeks' )->format( 'Y-m-d' );
+		}
+
+		return $keys;
+	}
+
+	/**
+	 * Get recent Los Angeles month keys, oldest first.
+	 *
+	 * @param int $count Number of buckets.
+	 * @return string[]
+	 */
+	private function get_recent_month_keys( $count ) {
+		$count = max( 1, absint( $count ) );
+		$tz    = new DateTimeZone( 'America/Los_Angeles' );
+		$now   = new DateTimeImmutable( 'first day of this month', $tz );
+		$keys  = array();
+
+		for ( $offset = $count - 1; $offset >= 0; --$offset ) {
+			$keys[] = $now->modify( '-' . $offset . ' months' )->format( 'Y-m' );
+		}
+
+		return $keys;
+	}
+
+	/**
+	 * Get recent Los Angeles year keys, oldest first.
+	 *
+	 * @param int $count Number of buckets.
+	 * @return string[]
+	 */
+	private function get_recent_year_keys( $count ) {
+		$count = max( 1, absint( $count ) );
+		$tz    = new DateTimeZone( 'America/Los_Angeles' );
+		$now   = new DateTimeImmutable( 'now', $tz );
+		$current_year = (int) $now->format( 'Y' );
+		$start_year   = max( 2026, $current_year - $count + 1 );
+		$keys  = array();
+
+		for ( $year = $start_year; $year <= $current_year; ++$year ) {
+			$keys[] = (string) $year;
+		}
+
+		return $keys;
 	}
 
 	/**

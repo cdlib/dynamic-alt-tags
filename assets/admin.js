@@ -565,6 +565,15 @@
 
 		var isRequestInFlight = false;
 
+		function applyChartData(data) {
+			if (!data || typeof data !== 'object') {
+				return;
+			}
+
+			var charts = metricsPanel.querySelectorAll('.ai-alt-processed-chart');
+			applyProcessedChartData(charts, data);
+		}
+
 		function applyMetricFields(fields) {
 			if (!fields || typeof fields !== 'object') {
 				return;
@@ -605,6 +614,9 @@
 						return;
 					}
 					applyMetricFields(payload.data.fields);
+					if (payload.data.chart && typeof payload.data.chart === 'object') {
+						applyChartData(payload.data.chart);
+					}
 				})
 				.catch(function () {
 					return;
@@ -629,6 +641,131 @@
 
 		window.setInterval(refreshMetrics, 15000);
 		refreshMetrics();
+	}
+
+	function renderProcessedChart(chartNode, view) {
+		if (!(chartNode instanceof HTMLElement)) {
+			return;
+		}
+
+		var chartData = chartNode._aiAltChartData;
+		if (!chartData || typeof chartData !== 'object') {
+			return;
+		}
+
+		var activeView = typeof view === 'string' && view ? view : (chartNode._aiAltChartView || 'day');
+		var points = Array.isArray(chartData[activeView]) ? chartData[activeView] : [];
+		var plot = chartNode.querySelector('.ai-alt-processed-chart-plot');
+		if (!(plot instanceof HTMLElement)) {
+			return;
+		}
+
+		chartNode._aiAltChartView = activeView;
+		chartNode.querySelectorAll('.ai-alt-chart-toggle').forEach(function (button) {
+			if (!(button instanceof HTMLButtonElement)) {
+				return;
+			}
+			var isActive = button.getAttribute('data-chart-view') === activeView;
+			button.classList.toggle('is-active', isActive);
+			button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+		});
+
+		if (!points.length) {
+			plot.innerHTML = '<p class="ai-alt-processed-chart-empty">No processed-image history has been recorded for this view yet.</p>';
+			return;
+		}
+
+		var maxValue = 0;
+		points.forEach(function (point) {
+			var numericValue = Number(point && point.value ? point.value : 0);
+			if (numericValue > maxValue) {
+				maxValue = numericValue;
+			}
+		});
+		if (maxValue < 1) {
+			maxValue = 1;
+		}
+
+		var barsHtml = points.map(function (point) {
+			var value = Number(point && point.value ? point.value : 0);
+			var label = point && point.label ? String(point.label) : '';
+			var fullLabel = point && point.full_label ? String(point.full_label) : label;
+			var height = value > 0 ? (value / maxValue) * 100 : 0;
+
+			return '' +
+				'<div class="ai-alt-processed-chart-bar" title="' + escapeHtml(fullLabel + ': ' + value) + '">' +
+					'<span class="ai-alt-processed-chart-value">' + escapeHtml(String(value)) + '</span>' +
+					'<div class="ai-alt-processed-chart-column">' +
+						'<span class="ai-alt-processed-chart-fill" style="height:' + String(height) + '%"></span>' +
+					'</div>' +
+					'<span class="ai-alt-processed-chart-label">' + escapeHtml(label) + '</span>' +
+				'</div>';
+		}).join('');
+
+		plot.innerHTML = '' +
+			'<div class="ai-alt-processed-chart-meta">' +
+				'<span class="ai-alt-processed-chart-summary">Showing ' + escapeHtml(activeView) + ' view</span>' +
+				'<span class="ai-alt-processed-chart-peak">Peak: ' + escapeHtml(String(maxValue)) + '</span>' +
+			'</div>' +
+			'<div class="ai-alt-processed-chart-bars">' + barsHtml + '</div>';
+	}
+
+	function applyProcessedChartData(chartNodes, chartData) {
+		if (!chartNodes || !chartData || typeof chartData !== 'object') {
+			return;
+		}
+
+		chartNodes.forEach(function (chartNode) {
+			if (!(chartNode instanceof HTMLElement)) {
+				return;
+			}
+			chartNode._aiAltChartData = chartData;
+			renderProcessedChart(chartNode, chartNode._aiAltChartView || 'day');
+		});
+	}
+
+	function initProcessedCharts(scope) {
+		var charts = (scope || document).querySelectorAll('.ai-alt-processed-chart');
+		charts.forEach(function (chartNode) {
+			if (!(chartNode instanceof HTMLElement)) {
+				return;
+			}
+
+			if (!chartNode._aiAltChartData) {
+				var rawData = chartNode.getAttribute('data-chart-series') || '';
+				if (rawData) {
+					try {
+						chartNode._aiAltChartData = JSON.parse(rawData);
+					} catch (e) {
+						chartNode._aiAltChartData = {};
+					}
+				} else {
+					chartNode._aiAltChartData = {};
+				}
+			}
+
+			chartNode.querySelectorAll('.ai-alt-chart-toggle').forEach(function (button) {
+				if (!(button instanceof HTMLButtonElement) || button.dataset.chartBound === '1') {
+					return;
+				}
+				button.dataset.chartBound = '1';
+				button.addEventListener('click', function () {
+					var view = button.getAttribute('data-chart-view') || 'day';
+					renderProcessedChart(chartNode, view);
+				});
+			});
+
+			renderProcessedChart(chartNode, chartNode._aiAltChartView || 'day');
+		});
+	}
+
+	function escapeHtml(value) {
+		return String(value)
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/"/g, '&quot;')
+			.replace(/'/g, '&#039;');
 	}
 
 	function applyUploadAction(trigger, select, customInput, resultNode) {
@@ -1737,6 +1874,7 @@
 			initQueueTabNoticeReset();
 			initQueueBrowseTab();
 			initMediaGridReturnToBrowse();
+			initProcessedCharts(document);
 			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
 			lockedAdminRoleCheckboxes.forEach(function (checkbox) {
