@@ -121,6 +121,7 @@ class WPAI_Alt_Text_Plugin {
 		add_action( 'edit_attachment', array( $this, 'apply_pending_upload_review_action' ), 20 );
 		add_action( 'wp_ajax_ai_alt_upload_action_ajax', array( $this, 'handle_upload_action_ajax' ) );
 		add_action( 'admin_notices', array( $this, 'render_upload_review_notice' ) );
+		add_filter( 'plugin_action_links_' . plugin_basename( WPAI_ALT_TEXT_FILE ), array( $this, 'add_plugin_action_links' ) );
 
 		add_action( 'admin_menu', array( $this->admin, 'register_menus' ) );
 		add_action( 'admin_enqueue_scripts', array( $this->admin, 'enqueue_assets' ) );
@@ -169,6 +170,28 @@ class WPAI_Alt_Text_Plugin {
 	 */
 	public function load_textdomain() {
 		load_plugin_textdomain( 'dynamic-alt-tags', false, dirname( plugin_basename( WPAI_ALT_TEXT_FILE ) ) . '/languages' );
+	}
+
+	/**
+	 * Add quick action links on the Plugins screen.
+	 *
+	 * @param string[] $links Existing action links.
+	 * @return string[]
+	 */
+	public function add_plugin_action_links( $links ) {
+		if ( ! is_array( $links ) ) {
+			$links = array();
+		}
+
+		$settings_link = sprintf(
+			'<a href="%1$s">%2$s</a>',
+			esc_url( admin_url( 'options-general.php?page=ai-alt-text-settings' ) ),
+			esc_html__( 'Settings', 'dynamic-alt-tags' )
+		);
+
+		$links[] = $settings_link;
+
+		return $links;
 	}
 
 	/**
