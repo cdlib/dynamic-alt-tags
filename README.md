@@ -18,7 +18,8 @@ This project is open source under the `MIT` license. See [`LICENSE`](LICENSE) fo
 - Safer queue processing with capped manual runs, retry backoff, and provider pause handling
 - Support for self-hosted infrastructure
 - Optional title, caption, and description sync
-- Live metrics with reset tools, including `Total images processed today`
+- Live metrics with reset tools, including day/week/month/year totals and processed-history charts
+- Configurable direct-upload image size and chart color styles
 - History bulk `Re-queue` support
 - Self-hosted plugin updates
 
@@ -170,6 +171,13 @@ Go to **Media > Dynamic Alt Tags**.
 - If you are running into provider usage limits, it is recommended to leave background processing turned off.
 
 ## Changelog
+
+### 1.0.7
+
+- Bump version to 1.0.7
+- Add a Direct Upload Image Size setting with Large and Medium options for Cloudflare testing
+- Add processed-images history charts to Dashboard and Metrics
+- Add selectable chart color styles and expanded day, week, month, and year totals
 
 ### 1.0.6
 

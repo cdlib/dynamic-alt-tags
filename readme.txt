@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 1.0.6
+Stable tag: 1.0.7
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -28,8 +28,10 @@ The plugin is designed for editorial teams that need fast generation plus contro
 * Focused Active Queue view after bulk-adding items from Search.
 * Attachment Details button to Generate Alt Text directly into the Alternative Text field.
 * Safer queue processing with capped manual runs, retry backoff, and provider pause handling.
+* Configurable direct-upload image size for Cloudflare request testing.
+* Selectable chart color styles and processed-history charts in Dashboard and Metrics.
 * Sync options for attachment title, caption, and description.
-* Queue dashboard and settings metrics, including `Total images processed today`, with Reset Metrics action.
+* Queue dashboard and settings metrics, including day, week, month, and year processed totals.
 * Self-hosted plugin update support with native update-page icon metadata.
 * Mobile/tablet responsive queue layout improvements.
 * Role-based access control for queue visibility and actions.
@@ -133,10 +135,12 @@ Behavior:
 === Settings Reference ===
 * `Cloudflare Worker URL`
 * `Cloudflare API Token`
+* `Direct Upload Image Size`
 * `Enable Background Processing`
 * `Background Processing Frequency`
 * `Images Processed Per Background Run`
 * `Min Confidence`
+* `Chart Bar Color Style`
 * `Use URL Mode - Send Image URL`
 * `Auto-Approve New Uploads`
 * `Sync Alt Text to Attachment Title`
@@ -184,6 +188,11 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.0.7 =
+* Add a Direct Upload Image Size setting with Large and Medium options for Cloudflare testing.
+* Add processed-images history charts to the Dashboard and Metrics pages.
+* Add selectable chart color styles and expanded day/week/month/year processed totals.
+
 = 1.0.6 =
 * Bump version to 1.0.6.
 * Keep self-hosted updater package metadata aligned with the 1.0.6 release build.
