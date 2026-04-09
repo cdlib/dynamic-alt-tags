@@ -37,6 +37,8 @@ class WPAI_Alt_Text_Settings {
 			'cloudflare_token'    => '',
 			'worker_url'          => '',
 			'use_url_mode'        => 0,
+			'direct_upload_image_size' => 'large',
+			'chart_bar_style'     => 'blue',
 			'enable_background_processing' => 0,
 			'background_process_interval'  => 5,
 			'background_batch_size'        => 5,
@@ -75,6 +77,10 @@ class WPAI_Alt_Text_Settings {
 			$options['background_process_interval'] = 5;
 		}
 		$options['background_batch_size'] = max( 1, min( 20, absint( $options['background_batch_size'] ) ) );
+		$size_options                   = $this->get_direct_upload_image_size_options();
+		$palette_options                = $this->get_chart_bar_style_options();
+		$options['direct_upload_image_size'] = isset( $size_options[ $options['direct_upload_image_size'] ] ) ? $options['direct_upload_image_size'] : 'large';
+		$options['chart_bar_style']     = isset( $palette_options[ $options['chart_bar_style'] ] ) ? $options['chart_bar_style'] : 'blue';
 
 		return $options;
 	}
@@ -642,31 +648,86 @@ class WPAI_Alt_Text_Settings {
 		);
 
 		$fields = array(
-			'worker_url'          => __( 'Cloudflare Worker URL', 'dynamic-alt-tags' ),
-			'cloudflare_token'    => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
-			'enable_background_processing' => __( 'Enable Background Processing', 'dynamic-alt-tags' ),
-			'background_process_interval'  => __( 'Background Processing Frequency', 'dynamic-alt-tags' ),
-			'background_batch_size'        => __( 'Images Processed Per Background Run', 'dynamic-alt-tags' ),
-			'min_confidence'      => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
-			'use_url_mode'        => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
-			'auto_apply_new_uploads' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
-			'sync_title_from_alt' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
-			'sync_caption_from_alt' => __( 'Sync Alt Text to Attachment Caption', 'dynamic-alt-tags' ),
-			'sync_description_from_alt' => __( 'Sync Alt Text to Attachment Description', 'dynamic-alt-tags' ),
-			'search_media_taxonomy' => __( 'Search Media Taxonomy', 'dynamic-alt-tags' ),
-			'overwrite_existing'  => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
-			'require_review'      => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
-			'keep_data_on_delete' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
+			array(
+				'id'    => 'worker_url',
+				'label' => __( 'Cloudflare Worker URL', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'cloudflare_token',
+				'label' => __( 'Cloudflare API Token', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'direct_upload_image_size',
+				'label' => __( 'Direct Upload Image Size', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'min_confidence',
+				'label' => __( 'Min Confidence (0-1)', 'dynamic-alt-tags' ),
+				'class' => 'ai-alt-settings-divider-after',
+			),
+			array(
+				'id'    => 'enable_background_processing',
+				'label' => __( 'Enable Background Processing', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'background_process_interval',
+				'label' => __( 'Background Processing Frequency', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'background_batch_size',
+				'label' => __( 'Images Processed Per Background Run', 'dynamic-alt-tags' ),
+				'class' => 'ai-alt-settings-divider-after',
+			),
+			array(
+				'id'    => 'use_url_mode',
+				'label' => __( 'Use URL Mode - Send Image URL', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'auto_apply_new_uploads',
+				'label' => __( 'Auto-Approve New Uploads', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'sync_title_from_alt',
+				'label' => __( 'Sync Alt Text to Attachment Title', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'sync_caption_from_alt',
+				'label' => __( 'Sync Alt Text to Attachment Caption', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'sync_description_from_alt',
+				'label' => __( 'Sync Alt Text to Attachment Description', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'search_media_taxonomy',
+				'label' => __( 'Search Media Taxonomy', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'chart_bar_style',
+				'label' => __( 'Chart Bar Color Style', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'overwrite_existing',
+				'label' => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'require_review',
+				'label' => __( 'Require Manual Review for Queue Items', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'keep_data_on_delete',
+				'label' => __( 'Keep Data On Delete', 'dynamic-alt-tags' ),
+			),
 		);
 
-		foreach ( $fields as $field_id => $label ) {
+		foreach ( $fields as $field ) {
 			add_settings_field(
-				$field_id,
-				$label,
+				$field['id'],
+				$field['label'],
 				array( $this, 'render_field' ),
 				'ai-alt-text-settings',
 				'ai_alt_text_provider_section',
-				array( 'id' => $field_id )
+				$field
 			);
 		}
 
@@ -718,6 +779,16 @@ class WPAI_Alt_Text_Settings {
 		if ( isset( $input['cloudflare_token'] ) ) {
 			$token = trim( (string) $input['cloudflare_token'] );
 			$current['cloudflare_token'] = '' === $token ? '' : sanitize_text_field( $token );
+		}
+		$direct_upload_size_options           = $this->get_direct_upload_image_size_options();
+		$current['direct_upload_image_size']  = isset( $input['direct_upload_image_size'] ) ? sanitize_key( (string) $input['direct_upload_image_size'] ) : 'large';
+		if ( ! isset( $direct_upload_size_options[ $current['direct_upload_image_size'] ] ) ) {
+			$current['direct_upload_image_size'] = 'large';
+		}
+		$chart_bar_style_options       = $this->get_chart_bar_style_options();
+		$current['chart_bar_style']    = isset( $input['chart_bar_style'] ) ? sanitize_key( (string) $input['chart_bar_style'] ) : 'blue';
+		if ( ! isset( $chart_bar_style_options[ $current['chart_bar_style'] ] ) ) {
+			$current['chart_bar_style'] = 'blue';
 		}
 
 		$current['enable_background_processing'] = ! empty( $input['enable_background_processing'] ) ? 1 : 0;
@@ -901,6 +972,54 @@ class WPAI_Alt_Text_Settings {
 			return;
 		}
 
+		if ( 'direct_upload_image_size' === $id ) {
+			$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
+			$options_map = $this->get_direct_upload_image_size_options();
+
+			printf(
+				'<select id="%1$s" name="%2$s">',
+				esc_attr( $field_id ),
+				esc_attr( $name )
+			);
+
+			foreach ( $options_map as $value => $label ) {
+				printf(
+					'<option value="%1$s" %2$s>%3$s</option>',
+					esc_attr( (string) $value ),
+					selected( (string) $options[ $id ], (string) $value, false ),
+					esc_html( (string) $label )
+				);
+			}
+
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Choose which generated image size is sent in Direct Upload Mode. Large is the current default. Medium can be useful for testing smaller payloads.', 'dynamic-alt-tags' ) . '</p>';
+			return;
+		}
+
+		if ( 'chart_bar_style' === $id ) {
+			$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
+			$options_map = $this->get_chart_bar_style_options();
+
+			printf(
+				'<select id="%1$s" name="%2$s">',
+				esc_attr( $field_id ),
+				esc_attr( $name )
+			);
+
+			foreach ( $options_map as $value => $label ) {
+				printf(
+					'<option value="%1$s" %2$s>%3$s</option>',
+					esc_attr( (string) $value ),
+					selected( (string) $options[ $id ], (string) $value, false ),
+					esc_html( (string) $label )
+				);
+			}
+
+			echo '</select>';
+			echo '<p class="description">' . esc_html__( 'Choose the color style used for the processed images chart bars and chart view tabs.', 'dynamic-alt-tags' ) . '</p>';
+			return;
+		}
+
 		if ( 'background_batch_size' === $id ) {
 			$field_id = 'ai-alt-field-' . sanitize_html_class( $id );
 
@@ -1002,6 +1121,130 @@ class WPAI_Alt_Text_Settings {
 		);
 
 		return $options;
+	}
+
+	/**
+	 * Get available direct-upload image size settings.
+	 *
+	 * @return array<string,string>
+	 */
+	public function get_direct_upload_image_size_options() {
+		return array(
+			'large'  => __( 'Large (default)', 'dynamic-alt-tags' ),
+			'medium' => __( 'Medium', 'dynamic-alt-tags' ),
+		);
+	}
+
+	/**
+	 * Get available chart bar style settings.
+	 *
+	 * @return array<string,string>
+	 */
+	public function get_chart_bar_style_options() {
+		return array(
+			'blue'    => __( '🟦 Blue', 'dynamic-alt-tags' ),
+			'teal'    => __( '🟩 Teal', 'dynamic-alt-tags' ),
+			'orange'  => __( '🟧 Orange', 'dynamic-alt-tags' ),
+			'emerald' => __( '🟩 Emerald', 'dynamic-alt-tags' ),
+			'plum'    => __( '🟪 Plum', 'dynamic-alt-tags' ),
+			'terracotta' => __( '🟫 Terracotta', 'dynamic-alt-tags' ),
+		);
+	}
+
+	/**
+	 * Get CSS variables for the selected chart bar style.
+	 *
+	 * @return array<string,string>
+	 */
+	public function get_chart_bar_style_palette() {
+		$options = $this->get_options();
+		$style   = isset( $options['chart_bar_style'] ) ? sanitize_key( (string) $options['chart_bar_style'] ) : 'blue';
+		$palettes = array(
+			'blue' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(16, 53, 95, 0.09)',
+				'--ai-alt-chart-toggle-hover-text'   => '#0f3154',
+				'--ai-alt-chart-toggle-active-start' => '#2271b1',
+				'--ai-alt-chart-toggle-active-end'   => '#13558f',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(19, 85, 143, 0.22)',
+				'--ai-alt-chart-fill-start'          => 'rgba(77, 161, 226, 0.95)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(34, 113, 177, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(18, 77, 128, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(34, 113, 177, 0.18)',
+			),
+			'teal' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(30, 166, 145, 0.12)',
+				'--ai-alt-chart-toggle-hover-text'   => '#145f58',
+				'--ai-alt-chart-toggle-active-start' => '#2ab7a2',
+				'--ai-alt-chart-toggle-active-end'   => '#178a7d',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(23, 138, 125, 0.22)',
+				'--ai-alt-chart-fill-start'          => 'rgba(108, 224, 210, 0.96)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(30, 166, 145, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(18, 111, 104, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(30, 138, 122, 0.2)',
+			),
+			'orange' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(244, 136, 37, 0.13)',
+				'--ai-alt-chart-toggle-hover-text'   => '#8f480d',
+				'--ai-alt-chart-toggle-active-start' => '#f49f3a',
+				'--ai-alt-chart-toggle-active-end'   => '#cb6712',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(203, 103, 18, 0.24)',
+				'--ai-alt-chart-fill-start'          => 'rgba(255, 194, 107, 0.96)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(244, 136, 37, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(196, 91, 9, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(214, 116, 24, 0.2)',
+			),
+			'emerald' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(47, 158, 98, 0.12)',
+				'--ai-alt-chart-toggle-hover-text'   => '#1b6a43',
+				'--ai-alt-chart-toggle-active-start' => '#4cbf7a',
+				'--ai-alt-chart-toggle-active-end'   => '#268f57',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(38, 143, 87, 0.22)',
+				'--ai-alt-chart-fill-start'          => 'rgba(137, 230, 173, 0.96)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(60, 179, 113, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(32, 120, 73, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(38, 143, 87, 0.2)',
+			),
+			'plum' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(138, 92, 184, 0.12)',
+				'--ai-alt-chart-toggle-hover-text'   => '#5e3f87',
+				'--ai-alt-chart-toggle-active-start' => '#9b6bd6',
+				'--ai-alt-chart-toggle-active-end'   => '#6f45ad',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(111, 69, 173, 0.22)',
+				'--ai-alt-chart-fill-start'          => 'rgba(202, 164, 244, 0.96)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(143, 92, 196, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(90, 54, 138, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(111, 69, 173, 0.2)',
+			),
+			'terracotta' => array(
+				'--ai-alt-chart-toggle-hover'        => 'rgba(176, 105, 78, 0.12)',
+				'--ai-alt-chart-toggle-hover-text'   => '#7b4530',
+				'--ai-alt-chart-toggle-active-start' => '#cb8667',
+				'--ai-alt-chart-toggle-active-end'   => '#9f5b3f',
+				'--ai-alt-chart-toggle-shadow'       => 'rgba(159, 91, 63, 0.22)',
+				'--ai-alt-chart-fill-start'          => 'rgba(230, 177, 154, 0.96)',
+				'--ai-alt-chart-fill-mid'            => 'rgba(198, 122, 91, 0.98)',
+				'--ai-alt-chart-fill-end'            => 'rgba(132, 73, 49, 1)',
+				'--ai-alt-chart-fill-shadow'         => 'rgba(159, 91, 63, 0.2)',
+			),
+		);
+
+		return isset( $palettes[ $style ] ) ? $palettes[ $style ] : $palettes['blue'];
+	}
+
+	/**
+	 * Build inline style string for chart palette CSS variables.
+	 *
+	 * @return string
+	 */
+	public function get_chart_bar_style_attribute() {
+		$palette = $this->get_chart_bar_style_palette();
+		$parts   = array();
+
+		foreach ( $palette as $property => $value ) {
+			$parts[] = sanitize_text_field( (string) $property ) . ': ' . sanitize_text_field( (string) $value );
+		}
+
+		return implode( '; ', $parts );
 	}
 
 	/**

@@ -365,7 +365,7 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 	}
 
 	/**
-	 * Prefer a large generated image size for direct upload when available.
+	 * Prefer a configured generated image size for direct upload when available.
 	 *
 	 * This keeps enough visual detail for alt text while reducing payload size
 	 * compared with sending the original full-resolution file every time.
@@ -387,8 +387,14 @@ class WPAI_Alt_Text_Provider_Cloudflare implements WPAI_Alt_Text_Provider_Interf
 			return $original_path;
 		}
 
+		$options         = $this->settings->get_options();
+		$selected_size   = isset( $options['direct_upload_image_size'] ) ? sanitize_key( (string) $options['direct_upload_image_size'] ) : 'large';
 		$base_dir        = trailingslashit( dirname( $original_path ) );
 		$preferred_sizes = array( 'medium_large', 'large', 'medium' );
+
+		if ( 'medium' === $selected_size ) {
+			$preferred_sizes = array( 'medium', 'medium_large', 'large' );
+		}
 
 		foreach ( $preferred_sizes as $size_name ) {
 			if ( empty( $metadata['sizes'][ $size_name ] ) || ! is_array( $metadata['sizes'][ $size_name ] ) ) {

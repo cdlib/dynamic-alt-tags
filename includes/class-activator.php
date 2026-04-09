@@ -92,6 +92,8 @@ class WPAI_Alt_Text_Activator {
 				'cloudflare_token'    => '',
 				'worker_url'          => '',
 				'use_url_mode'        => 0,
+				'direct_upload_image_size' => 'large',
+				'chart_bar_style'     => 'blue',
 				'enable_background_processing' => 0,
 				'background_process_interval'  => 5,
 				'background_batch_size'        => 5,

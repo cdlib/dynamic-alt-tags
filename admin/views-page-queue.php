@@ -108,6 +108,7 @@ $processed_today          = isset( $daily_metrics['daily_images_processed'] ) ? 
 $processed_this_week      = isset( $metrics['weekly_images_processed'] ) ? absint( $metrics['weekly_images_processed'] ) : 0;
 $processed_this_month     = isset( $metrics['monthly_images_processed'] ) ? absint( $metrics['monthly_images_processed'] ) : 0;
 $processed_this_year      = isset( $metrics['yearly_images_processed'] ) ? absint( $metrics['yearly_images_processed'] ) : 0;
+$chart_bar_style_attribute = isset( $chart_bar_style_attribute ) ? (string) $chart_bar_style_attribute : '';
 if ( '' !== $last_processed_at ) {
 	$last_processed_display = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last_processed_at );
 	if ( ! is_string( $last_processed_display ) || '' === $last_processed_display ) {
@@ -115,7 +116,7 @@ if ( '' !== $last_processed_at ) {
 	}
 }
 ?>
-<div class="wrap ai-alt-wrap ai-alt-queue-page ai-alt-queue-view-<?php echo esc_attr( $view ); ?>" data-focused-queue-ids="<?php echo esc_attr( $focused_queue_ids_csv ); ?>">
+<div class="wrap ai-alt-wrap ai-alt-queue-page ai-alt-queue-view-<?php echo esc_attr( $view ); ?>" data-focused-queue-ids="<?php echo esc_attr( $focused_queue_ids_csv ); ?>"<?php echo '' !== $chart_bar_style_attribute ? ' style="' . esc_attr( $chart_bar_style_attribute ) . '"' : ''; ?>>
 	<h1><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h1>
 	<div class="ai-alt-queue-shell">
 	<div class="ai-alt-queue-header-bar">

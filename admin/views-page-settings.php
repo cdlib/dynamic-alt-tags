@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 $notice = isset( $_GET['notice'] ) ? sanitize_key( wp_unslash( $_GET['notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$chart_bar_style_attribute = isset( $chart_bar_style_attribute ) ? (string) $chart_bar_style_attribute : '';
 $active_tab = 'settings';
 if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleared' ), true ) ) {
 	$active_tab = 'tools';
@@ -18,7 +19,7 @@ if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleare
 	$active_tab = in_array( $active_tab, array( 'settings', 'tools', 'access-control', 'metrics' ), true ) ? $active_tab : 'metrics';
 }
 ?>
-<div class="wrap ai-alt-wrap ai-alt-settings-page">
+<div class="wrap ai-alt-wrap ai-alt-settings-page"<?php echo '' !== $chart_bar_style_attribute ? ' style="' . esc_attr( $chart_bar_style_attribute ) . '"' : ''; ?>>
 	<h1><?php esc_html_e( 'Dynamic Alt Tags Settings', 'dynamic-alt-tags' ); ?></h1>
 	<?php settings_errors( 'ai_alt_text_options_group' ); ?>
 

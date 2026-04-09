@@ -187,6 +187,7 @@ class WPAI_Alt_Text_Admin {
 		$connection_status = $this->get_connection_status();
 		$metrics           = $this->settings->get_metrics();
 		$processed_history_chart = $this->settings->get_processed_history_chart_data();
+		$chart_bar_style_attribute = $this->settings->get_chart_bar_style_attribute();
 		$coverage          = $this->queue_repo->get_image_alt_coverage_counts();
 		$daily_metrics     = $this->get_daily_metrics_summary( $metrics );
 
@@ -255,6 +256,7 @@ class WPAI_Alt_Text_Admin {
 		$total_images = $this->queue_repo->get_total_no_alt_images();
 		$metrics      = $this->settings->get_metrics();
 		$processed_history_chart = $this->settings->get_processed_history_chart_data();
+		$chart_bar_style_attribute = $this->settings->get_chart_bar_style_attribute();
 		$coverage     = $this->queue_repo->get_image_alt_coverage_counts();
 		$daily_metrics = $this->get_daily_metrics_summary( $metrics );
 
