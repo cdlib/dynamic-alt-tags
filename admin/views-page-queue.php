@@ -282,19 +282,19 @@ if ( '' !== $last_processed_at ) {
 					<span id="ai-alt-metric-total-processed"><?php echo esc_html( number_format_i18n( $total_processed ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Total images processed today', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images processed today', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-today"><?php echo esc_html( number_format_i18n( $processed_today ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Total images processed this week', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images processed this week', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-this-week"><?php echo esc_html( number_format_i18n( $processed_this_week ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Total images processed this month', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images processed this month', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-this-month"><?php echo esc_html( number_format_i18n( $processed_this_month ) ); ?></span>
 				</div>
 				<div class="ai-alt-metric-card">
-					<strong><?php esc_html_e( 'Total images processed this year', 'dynamic-alt-tags' ); ?></strong>
+					<strong><?php esc_html_e( 'Images processed this year', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-processed-this-year"><?php echo esc_html( number_format_i18n( $processed_this_year ) ); ?></span>
 				</div>
 			</div>
@@ -303,7 +303,7 @@ if ( '' !== $last_processed_at ) {
 				<div class="ai-alt-processed-chart-header">
 					<div>
 						<h3><?php esc_html_e( 'Processed Images Over Time', 'dynamic-alt-tags' ); ?></h3>
-						<p><?php esc_html_e( 'Toggle between day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+						<p><?php esc_html_e( 'Switch between day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
 					</div>
 					<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
 						<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>

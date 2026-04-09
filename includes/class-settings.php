@@ -598,7 +598,7 @@ class WPAI_Alt_Text_Settings {
 		$tz    = new DateTimeZone( 'America/Los_Angeles' );
 		$now   = new DateTimeImmutable( 'now', $tz );
 		$current_year = (int) $now->format( 'Y' );
-		$start_year   = max( 2026, $current_year - $count + 1 );
+		$start_year   = $current_year - $count + 1;
 		$keys  = array();
 
 		for ( $year = $start_year; $year <= $current_year; ++$year ) {

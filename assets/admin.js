@@ -690,7 +690,7 @@
 			var value = Number(point && point.value ? point.value : 0);
 			var label = point && point.label ? String(point.label) : '';
 			var fullLabel = point && point.full_label ? String(point.full_label) : label;
-			var height = value > 0 ? (value / maxValue) * 100 : 0;
+			var height = value > 0 ? (value / maxValue) * 84 : 0;
 
 			return '' +
 				'<div class="ai-alt-processed-chart-bar" title="' + escapeHtml(fullLabel + ': ' + value) + '">' +
