@@ -263,7 +263,7 @@ if ( '' !== $last_processed_at ) {
 	<?php if ( $is_dashboard ) : ?>
 		<div id="ai-alt-settings-panel-metrics">
 			<h2><?php esc_html_e( 'Dashboard', 'dynamic-alt-tags' ); ?></h2>
-			<p class="description"><?php esc_html_e( 'Live attachment coverage and cumulative processing metrics.', 'dynamic-alt-tags' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Welcome to the Dynamic Alt Tags plugin.', 'dynamic-alt-tags' ); ?></p>
 
 			<div class="ai-alt-metrics-grid">
 				<div class="ai-alt-metric-card">
@@ -303,8 +303,8 @@ if ( '' !== $last_processed_at ) {
 			<div class="ai-alt-processed-chart" data-chart-series="<?php echo esc_attr( wp_json_encode( $processed_history_chart ) ); ?>">
 				<div class="ai-alt-processed-chart-header">
 					<div>
-						<h3><?php esc_html_e( 'Processed Images Over Time', 'dynamic-alt-tags' ); ?></h3>
-						<p><?php esc_html_e( 'Switch between day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+						<h3><?php esc_html_e( 'Images Processed Over Time', 'dynamic-alt-tags' ); ?></h3>
+						<p><?php esc_html_e( 'Select day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
 					</div>
 					<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
 						<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>
