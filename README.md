@@ -66,6 +66,34 @@ Short version:
 
 For the full setup guide, sample Worker code, request/response contract, and URL mode vs direct upload details, see [`docs/cloudflare-worker.md`](docs/cloudflare-worker.md).
 
+## How to Use
+
+### Queue Workflow
+
+Go to **Media > Dynamic Alt Tags**.
+
+#### Active Queue
+
+- `Generate Alt Text`: generate or refresh a suggestion
+- `Approve`: apply the suggestion
+- `Skip Image`: move the item to History
+- `View Image`: open the source image
+- Top actions: `Run Backfill`, `Generate Alt Text For Queued`, `Refresh`
+- Bulk actions: `Approve`, `Skip Image`, `Generate Alt Text`
+- `Run Backfill` only scans for images with empty alt text and adds them to the queue. It does not call the provider by itself.
+- `Generate Alt Text For Queued` processes queued items visible on the current Active Queue page.
+
+#### Search
+
+- Grid-style media browser with live search and filters
+- Supports bulk select, shift-click range selection, and `Add to Queue`
+- Clicking a thumbnail opens WordPress Attachment Details
+
+#### History
+
+- Shows finalized items (`approved`, `rejected`, `skipped`)
+- Supports row and bulk `Re-queue`
+
 ## Project Status
 
 This project is usable and actively maintained.
@@ -117,60 +145,13 @@ Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 - [`SECURITY.md`](SECURITY.md)
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
-## How to Use
-
-### Queue Workflow
-
-Go to **Media > Dynamic Alt Tags**.
-
-#### Active Queue
-
-- `Generate Alt Text`: generate or refresh a suggestion
-- `Approve`: apply the suggestion
-- `Skip Image`: move the item to History
-- `View Image`: open the source image
-- Top actions: `Run Backfill`, `Generate Alt Text For Queued`, `Refresh`
-- Bulk actions: `Approve`, `Skip Image`, `Generate Alt Text`
-- `Run Backfill` only scans for images with empty alt text and adds them to the queue. It does not call the provider by itself.
-- `Generate Alt Text For Queued` processes queued items visible on the current Active Queue page.
-
-#### Search
-
-- Grid-style media browser with live search and filters
-- Supports bulk select, shift-click range selection, and `Add to Queue`
-- Clicking a thumbnail opens WordPress Attachment Details
-
-#### History
-
-- Shows finalized items (`approved`, `rejected`, `skipped`)
-- Supports row and bulk `Re-queue`
-
-### Attachment Details Workflow
-
-- No queue row: image is queued and processed
-- `generated`: suggested alt text is applied
-- `processing`: try-again message is shown
-- `skipped`, `approved`, `rejected`: automatically requeued and processed
-
-## Metrics Notes
-
-- `Total images processed` counts unique attachment IDs, not raw processing attempts.
-- `Total images processed today` uses the current Los Angeles day for the plugin’s daily metrics.
-
-## Processing Safeguards
-
-- Manual queue runs and bulk processing are capped to reduce request spikes.
-- Failed items use retry backoff instead of immediate repeated retries.
-- Provider-wide quota or resource failures pause processing instead of continuing to flood requests.
-- Background processing is off by default and can be enabled with configurable WP-Cron frequency and per-run limits.
-
-## Background Processing
-
-- Background processing is optional and disabled by default.
-- When enabled, WP-Cron can process queued items automatically using the selected frequency and images-per-run settings.
-- If you are running into provider usage limits, it is recommended to leave background processing turned off.
-
 ## Changelog
+
+### 1.0.8
+
+- Bump version to 1.0.8
+- Add separate Dashboard settings to show or hide the processed images chart and detailed processing metrics panel
+- Keep those Dashboard panels off by default while leaving the Dashboard summary cards visible
 
 ### 1.0.7
 
@@ -178,12 +159,6 @@ Go to **Media > Dynamic Alt Tags**.
 - Add a Direct Upload Image Size setting with Large and Medium options for Cloudflare testing
 - Add processed-images history charts to Dashboard and Metrics
 - Add selectable chart color styles and expanded day, week, month, and year totals
-
-### 1.0.8
-
-- Bump version to 1.0.8
-- Add separate Dashboard settings to show or hide the processed images chart and detailed processing metrics panel
-- Keep those Dashboard panels off by default while leaving the Dashboard summary cards visible
 
 ### 1.0.6
 

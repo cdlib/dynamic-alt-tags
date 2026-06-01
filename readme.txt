@@ -115,15 +115,6 @@ Row actions:
 Bulk actions:
 * `Re-queue`
 
-=== Attachment Details Workflow ===
-In Media Attachment Details, use `Generate Alt Text` for direct generation.
-
-Behavior:
-* No queue row: image is queued and processed
-* `generated`: suggested alt text is applied
-* `processing`: returns a try-again message
-* `skipped`, `approved`, or `rejected`: automatically requeued and processed
-
 === Access and Permissions ===
 ==== Settings ====
 * Administrators only.
@@ -152,17 +143,6 @@ Behavior:
 * `Overwrite Existing Alt Text`
 * `Require Manual Review for Queue Items`
 * `Keep Data On Delete`
-
-=== Metrics Notes ===
-* `Total images processed` counts unique attachment IDs, not raw processing attempts.
-* `Total images processed today` uses the current Los Angeles day and resets at the local day boundary used by the plugin metrics.
-* If you had older metrics from before unique counting was introduced, use `Reset Metrics` to start a clean baseline.
-
-=== Processing Safeguards ===
-* Manual queue runs and bulk processing are capped to reduce request spikes.
-* Failed items use retry backoff instead of immediate repeated retries.
-* Provider-wide quota or resource failures pause processing rather than continuing to flood requests.
-* Background processing is off by default and can be enabled with configurable frequency and per-run limits.
 
 === Troubleshooting ===
 ==== Provider Test Fails ====
