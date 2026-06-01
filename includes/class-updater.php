@@ -30,7 +30,7 @@ class WPAI_Alt_Text_Updater {
 	 *
 	 * @var string
 	 */
-	const REPOSITORY_URL = 'https://github.com/ericsatzman/dynamic-alt-tags';
+	const REPOSITORY_URL = 'https://github.com/cdlib/dynamic-alt-tags';
 
 	/**
 	 * Get icon URLs for update UI.
