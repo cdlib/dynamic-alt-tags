@@ -206,7 +206,7 @@ class WPAI_Alt_Text_Admin {
 
 		$status       = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 		$view         = isset( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : 'dashboard';
-		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
+		$view         = in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse', 'help' ), true ) ? $view : 'dashboard';
 		if ( 'browse' === $view ) {
 			$view = 'search';
 		}
@@ -215,7 +215,7 @@ class WPAI_Alt_Text_Admin {
 		$page                      = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
 		$queue_load_more_next_page = $page + 1;
 		$per_page                  = 20;
-		if ( 'dashboard' === $view ) {
+		if ( 'dashboard' === $view || 'help' === $view ) {
 			$data = array(
 				'total'    => 0,
 				'page'     => $page,

@@ -382,6 +382,19 @@
 	max-width: 1000px;
 }
 
+.ai-alt-queue-page.ai-alt-queue-view-help .ai-alt-queue-shell {
+	background: transparent;
+	border: 0;
+	padding: 0;
+}
+
+.ai-alt-queue-page .ai-alt-help-panel {
+	background: #ffffff;
+	border: 1px solid var(--ai-alt-slate-200);
+	border-radius: 8px;
+	padding: 18px 18px 14px;
+}
+
 .ai-alt-queue-page #ai-alt-settings-panel-metrics {
 	background: #ffffff;
 	border: 1px solid var(--ai-alt-slate-200);

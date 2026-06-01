@@ -18,13 +18,14 @@ $has_more     = $page_num < $max_pages;
 $has_more     = isset( $queue_has_more ) && null !== $queue_has_more ? (bool) $queue_has_more : $has_more;
 $total_images = isset( $total_images ) ? absint( $total_images ) : 0;
 $status       = isset( $status ) ? sanitize_key( (string) $status ) : '';
-$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse' ), true ) ? $view : 'dashboard';
+$view         = isset( $view ) && in_array( $view, array( 'dashboard', 'active', 'history', 'no_alt', 'search', 'browse', 'help' ), true ) ? $view : 'dashboard';
 $view         = 'browse' === $view ? 'search' : $view;
 $is_dashboard = 'dashboard' === $view;
 $is_history   = 'history' === $view;
 $is_no_alt    = 'no_alt' === $view;
 $is_search    = 'search' === $view;
-$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search;
+$is_help      = 'help' === $view;
+$is_active    = ! $is_dashboard && ! $is_history && ! $is_no_alt && ! $is_search && ! $is_help;
 $refresh_args = array(
 	'page' => 'ai-alt-text-queue',
 	'view' => $view,
@@ -175,6 +176,19 @@ if ( '' !== $last_processed_at ) {
 			);
 			?>
 			"><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></a>
+			<a class="nav-tab <?php echo $is_help ? 'nav-tab-active' : ''; ?>" href="
+			<?php
+			echo esc_url(
+				add_query_arg(
+					array(
+						'page' => 'ai-alt-text-queue',
+						'view' => 'help',
+					),
+					admin_url( 'upload.php' )
+				)
+			);
+			?>
+			"><?php esc_html_e( 'Help', 'dynamic-alt-tags' ); ?></a>
 		</h2>
 		<?php if ( $is_active ) : ?>
 			<div class="ai-alt-queue-process-top">
@@ -244,7 +258,7 @@ if ( '' !== $last_processed_at ) {
 		</div>
 	<?php endif; ?>
 
-	<?php if ( ! $is_dashboard ) : ?>
+	<?php if ( ! $is_dashboard && ! $is_help ) : ?>
 		<p>
 			<?php
 			if ( $is_history ) {
@@ -356,6 +370,88 @@ if ( '' !== $last_processed_at ) {
 					</tbody>
 				</table>
 			<?php endif; ?>
+		</div>
+
+	<?php elseif ( $is_help ) : ?>
+		<div class="ai-alt-help-panel">
+			<h2><?php esc_html_e( 'Dynamic Alt Tags', 'dynamic-alt-tags' ); ?></h2>
+			<p><?php esc_html_e( 'Dynamic Alt Tags is a WordPress plugin for generating, reviewing, and applying AI-suggested alt text through a Cloudflare Worker.', 'dynamic-alt-tags' ); ?></p>
+
+			<h3><?php esc_html_e( 'Features', 'dynamic-alt-tags' ); ?></h3>
+			<ul class="ul-disc">
+				<li><?php esc_html_e( 'Queue-based processing for media library images', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Search tab with live filters, taxonomy filtering, and bulk queue add', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Active Queue review workflow with approve, skip, and generate actions', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Human review before approval when you want it', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Per-image actions directly inside WordPress media workflows', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Safer queue processing with capped manual runs, retry backoff, and provider pause handling', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Support for self-hosted infrastructure', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Optional title, caption, and description sync', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Live metrics with reset tools, including day/week/month/year totals and processed-history charts', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Configurable direct-upload image size and chart color styles', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'History bulk Re-queue support', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Self-hosted plugin updates', 'dynamic-alt-tags' ); ?></li>
+			</ul>
+
+			<h3><?php esc_html_e( 'Getting Started', 'dynamic-alt-tags' ); ?></h3>
+			<h4><?php esc_html_e( 'Quick Start', 'dynamic-alt-tags' ); ?></h4>
+			<ol>
+				<li><?php esc_html_e( 'Set up and deploy a Cloudflare Worker.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Paste the Worker URL into Settings > Dynamic Alt Tags.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Add a shared token if your Worker requires authentication.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Choose URL mode or direct upload mode.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Use Run Backfill or queue items from the Search tab.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Open the Active Queue page to review suggested alt text before approving it.', 'dynamic-alt-tags' ); ?></li>
+			</ol>
+
+			<h3><?php esc_html_e( 'How to Use', 'dynamic-alt-tags' ); ?></h3>
+			<h4><?php esc_html_e( 'Queue Workflow', 'dynamic-alt-tags' ); ?></h4>
+			<p><?php esc_html_e( 'Go to Media > Dynamic Alt Tags.', 'dynamic-alt-tags' ); ?></p>
+
+			<h4><?php esc_html_e( 'Active Queue', 'dynamic-alt-tags' ); ?></h4>
+			<ul class="ul-disc">
+				<li><?php esc_html_e( 'Generate Alt Text: generate or refresh a suggestion', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Approve: apply the suggestion', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Skip Image: move the item to History', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'View Image: open the source image', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Top actions: Run Backfill, Generate Alt Text For Queued, Refresh', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Bulk actions: Approve, Skip Image, Generate Alt Text', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Run Backfill only scans for images with empty alt text and adds them to the queue. It does not call the provider by itself.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Generate Alt Text For Queued processes queued items visible on the current Active Queue page.', 'dynamic-alt-tags' ); ?></li>
+			</ul>
+
+			<h4><?php esc_html_e( 'Search', 'dynamic-alt-tags' ); ?></h4>
+			<ul class="ul-disc">
+				<li><?php esc_html_e( 'Grid-style media browser with live search and filters', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Supports bulk select, shift-click range selection, and Add to Queue', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Clicking a thumbnail opens WordPress Attachment Details', 'dynamic-alt-tags' ); ?></li>
+			</ul>
+
+			<h4><?php esc_html_e( 'History', 'dynamic-alt-tags' ); ?></h4>
+			<ul class="ul-disc">
+				<li><?php esc_html_e( 'Shows finalized items (approved, rejected, skipped)', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Supports row and bulk Re-queue', 'dynamic-alt-tags' ); ?></li>
+			</ul>
+
+			<h3><?php esc_html_e( 'Cloudflare Setup', 'dynamic-alt-tags' ); ?></h3>
+			<p><?php esc_html_e( 'The plugin expects a Cloudflare Worker that accepts a JSON POST request and returns JSON with alt_text or caption.', 'dynamic-alt-tags' ); ?></p>
+			<p><?php esc_html_e( 'Short version:', 'dynamic-alt-tags' ); ?></p>
+			<ol>
+				<li><?php esc_html_e( 'Create a Worker with npm create cloudflare@latest.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Add an [ai] binding in wrangler.toml.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Optionally add a WORKER_TOKEN secret.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Deploy the Worker with npx wrangler deploy.', 'dynamic-alt-tags' ); ?></li>
+				<li><?php esc_html_e( 'Paste the Worker URL into WordPress plugin settings.', 'dynamic-alt-tags' ); ?></li>
+			</ol>
+			<p>
+				<?php
+				printf(
+					/* translators: %s documentation path */
+					esc_html__( 'For the full setup guide, sample Worker code, request/response contract, and URL mode vs direct upload details, see %s.', 'dynamic-alt-tags' ),
+					esc_html( 'docs/cloudflare-worker.md' )
+				);
+				?>
+			</p>
 		</div>
 
 	<?php elseif ( $is_search ) : ?>
