@@ -257,6 +257,9 @@ class WPAI_Alt_Text_Admin {
 		$metrics      = $this->settings->get_metrics();
 		$processed_history_chart = $this->settings->get_processed_history_chart_data();
 		$chart_bar_style_attribute = $this->settings->get_chart_bar_style_attribute();
+		$options      = $this->settings->get_options();
+		$dashboard_processed_chart_enabled = ! empty( $options['show_dashboard_processed_chart'] );
+		$dashboard_processing_metrics_enabled = ! empty( $options['show_dashboard_processing_metrics'] );
 		$coverage     = $this->queue_repo->get_image_alt_coverage_counts();
 		$daily_metrics = $this->get_daily_metrics_summary( $metrics );
 

@@ -179,6 +179,12 @@ Go to **Media > Dynamic Alt Tags**.
 - Add processed-images history charts to Dashboard and Metrics
 - Add selectable chart color styles and expanded day, week, month, and year totals
 
+### 1.0.8
+
+- Bump version to 1.0.8
+- Add separate Dashboard settings to show or hide the processed images chart and detailed processing metrics panel
+- Keep those Dashboard panels off by default while leaving the Dashboard summary cards visible
+
 ### 1.0.6
 
 - Bump version to 1.0.6

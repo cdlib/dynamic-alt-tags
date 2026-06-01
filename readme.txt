@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 1.0.7
+Stable tag: 1.0.8
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -141,6 +141,8 @@ Behavior:
 * `Images Processed Per Background Run`
 * `Min Confidence`
 * `Chart Bar Color Style`
+* `Show Dashboard Processed Images Chart`
+* `Show Dashboard Processing Metrics`
 * `Use URL Mode - Send Image URL`
 * `Auto-Approve New Uploads`
 * `Sync Alt Text to Attachment Title`
@@ -188,6 +190,10 @@ Behavior:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.0.8 =
+* Add separate Dashboard settings to show or hide the processed images chart and detailed processing metrics panel.
+* Keep those Dashboard panels off by default while leaving the Dashboard summary cards visible.
+
 = 1.0.7 =
 * Add a Direct Upload Image Size setting with Large and Medium options for Cloudflare testing.
 * Add processed-images history charts to the Dashboard and Metrics pages.

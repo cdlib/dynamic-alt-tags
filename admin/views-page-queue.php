@@ -88,6 +88,8 @@ $metrics = isset( $metrics ) && is_array( $metrics ) ? $metrics : array();
 $coverage = isset( $coverage ) && is_array( $coverage ) ? $coverage : array();
 $daily_metrics = isset( $daily_metrics ) && is_array( $daily_metrics ) ? $daily_metrics : array();
 $processed_history_chart = isset( $processed_history_chart ) && is_array( $processed_history_chart ) ? $processed_history_chart : array();
+$dashboard_processed_chart_enabled = isset( $dashboard_processed_chart_enabled ) ? (bool) $dashboard_processed_chart_enabled : false;
+$dashboard_processing_metrics_enabled = isset( $dashboard_processing_metrics_enabled ) ? (bool) $dashboard_processing_metrics_enabled : false;
 
 $total_images_dashboard   = isset( $coverage['total_images'] ) ? absint( $coverage['total_images'] ) : 0;
 $images_with_alt          = isset( $coverage['with_alt'] ) ? absint( $coverage['with_alt'] ) : 0;
@@ -300,56 +302,60 @@ if ( '' !== $last_processed_at ) {
 				</div>
 			</div>
 
-			<div class="ai-alt-processed-chart" data-chart-series="<?php echo esc_attr( wp_json_encode( $processed_history_chart ) ); ?>">
-				<div class="ai-alt-processed-chart-header">
-					<div>
-						<h3><?php esc_html_e( 'Images Processed Over Time', 'dynamic-alt-tags' ); ?></h3>
-						<p><?php esc_html_e( 'Select day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+			<?php if ( $dashboard_processed_chart_enabled ) : ?>
+				<div class="ai-alt-processed-chart" data-chart-series="<?php echo esc_attr( wp_json_encode( $processed_history_chart ) ); ?>">
+					<div class="ai-alt-processed-chart-header">
+						<div>
+							<h3><?php esc_html_e( 'Images Processed Over Time', 'dynamic-alt-tags' ); ?></h3>
+							<p><?php esc_html_e( 'Select day, week, month, and year views to compare completed image processing periods.', 'dynamic-alt-tags' ); ?></p>
+						</div>
+						<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
+							<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>
+							<button type="button" class="button ai-alt-chart-toggle" data-chart-view="week"><?php esc_html_e( 'Week', 'dynamic-alt-tags' ); ?></button>
+							<button type="button" class="button ai-alt-chart-toggle" data-chart-view="month"><?php esc_html_e( 'Month', 'dynamic-alt-tags' ); ?></button>
+							<button type="button" class="button ai-alt-chart-toggle" data-chart-view="year"><?php esc_html_e( 'Year', 'dynamic-alt-tags' ); ?></button>
+						</div>
 					</div>
-					<div class="ai-alt-processed-chart-toggle" role="tablist" aria-label="<?php esc_attr_e( 'Processed images chart views', 'dynamic-alt-tags' ); ?>">
-						<button type="button" class="button ai-alt-chart-toggle is-active" data-chart-view="day"><?php esc_html_e( 'Day', 'dynamic-alt-tags' ); ?></button>
-						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="week"><?php esc_html_e( 'Week', 'dynamic-alt-tags' ); ?></button>
-						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="month"><?php esc_html_e( 'Month', 'dynamic-alt-tags' ); ?></button>
-						<button type="button" class="button ai-alt-chart-toggle" data-chart-view="year"><?php esc_html_e( 'Year', 'dynamic-alt-tags' ); ?></button>
+					<div class="ai-alt-processed-chart-stage">
+						<div class="ai-alt-processed-chart-plot" aria-live="polite"></div>
 					</div>
 				</div>
-				<div class="ai-alt-processed-chart-stage">
-					<div class="ai-alt-processed-chart-plot" aria-live="polite"></div>
-				</div>
-			</div>
+			<?php endif; ?>
 
-			<table class="widefat striped ai-alt-metrics-table">
-				<tbody>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Success count', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-success-count"><?php echo esc_html( number_format_i18n( $success_count ) ); ?></td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Failure count', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-failure-count"><?php echo esc_html( number_format_i18n( $failure_count ) ); ?></td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Average processing time', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-average-processing"><?php echo esc_html( number_format_i18n( $average_processing_ms, 2 ) ); ?> ms</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Average provider latency', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-average-provider-latency"><?php echo esc_html( number_format_i18n( $average_provider_ms, 2 ) ); ?> ms</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Last processing time', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-last-processing"><?php echo esc_html( number_format_i18n( $last_processing_ms, 2 ) ); ?> ms</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Last provider latency', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-last-provider-latency"><?php echo esc_html( number_format_i18n( $last_provider_latency, 2 ) ); ?> ms</td>
-					</tr>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Last processed at', 'dynamic-alt-tags' ); ?></th>
-						<td id="ai-alt-metric-last-processed-at"><?php echo '' !== $last_processed_display ? esc_html( $last_processed_display ) : esc_html__( 'Not yet recorded', 'dynamic-alt-tags' ); ?></td>
-					</tr>
-				</tbody>
-			</table>
+			<?php if ( $dashboard_processing_metrics_enabled ) : ?>
+				<table class="widefat striped ai-alt-metrics-table">
+					<tbody>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Success count', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-success-count"><?php echo esc_html( number_format_i18n( $success_count ) ); ?></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Failure count', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-failure-count"><?php echo esc_html( number_format_i18n( $failure_count ) ); ?></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Average processing time', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-average-processing"><?php echo esc_html( number_format_i18n( $average_processing_ms, 2 ) ); ?> ms</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Average provider latency', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-average-provider-latency"><?php echo esc_html( number_format_i18n( $average_provider_ms, 2 ) ); ?> ms</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Last processing time', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-last-processing"><?php echo esc_html( number_format_i18n( $last_processing_ms, 2 ) ); ?> ms</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Last provider latency', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-last-provider-latency"><?php echo esc_html( number_format_i18n( $last_provider_latency, 2 ) ); ?> ms</td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Last processed at', 'dynamic-alt-tags' ); ?></th>
+							<td id="ai-alt-metric-last-processed-at"><?php echo '' !== $last_processed_display ? esc_html( $last_processed_display ) : esc_html__( 'Not yet recorded', 'dynamic-alt-tags' ); ?></td>
+						</tr>
+					</tbody>
+				</table>
+			<?php endif; ?>
 		</div>
 
 	<?php elseif ( $is_search ) : ?>

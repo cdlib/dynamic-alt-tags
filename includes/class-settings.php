@@ -39,6 +39,8 @@ class WPAI_Alt_Text_Settings {
 			'use_url_mode'        => 0,
 			'direct_upload_image_size' => 'large',
 			'chart_bar_style'     => 'blue',
+			'show_dashboard_processed_chart' => 0,
+			'show_dashboard_processing_metrics' => 0,
 			'enable_background_processing' => 0,
 			'background_process_interval'  => 5,
 			'background_batch_size'        => 5,
@@ -70,6 +72,12 @@ class WPAI_Alt_Text_Settings {
 		if ( ! array_key_exists( 'background_batch_size', $raw ) && array_key_exists( 'batch_size', $raw ) ) {
 			$options['background_batch_size'] = max( 1, min( 20, absint( $raw['batch_size'] ) ) );
 		}
+		if ( ! array_key_exists( 'show_dashboard_processed_chart', $raw ) && array_key_exists( 'show_dashboard_processing_panels', $raw ) ) {
+			$options['show_dashboard_processed_chart'] = ! empty( $raw['show_dashboard_processing_panels'] ) ? 1 : 0;
+		}
+		if ( ! array_key_exists( 'show_dashboard_processing_metrics', $raw ) && array_key_exists( 'show_dashboard_processing_panels', $raw ) ) {
+			$options['show_dashboard_processing_metrics'] = ! empty( $raw['show_dashboard_processing_panels'] ) ? 1 : 0;
+		}
 
 		$options['enable_background_processing'] = ! empty( $options['enable_background_processing'] ) ? 1 : 0;
 		$options['background_process_interval']  = max( 5, min( 60, absint( $options['background_process_interval'] ) ) );
@@ -81,6 +89,8 @@ class WPAI_Alt_Text_Settings {
 		$palette_options                = $this->get_chart_bar_style_options();
 		$options['direct_upload_image_size'] = isset( $size_options[ $options['direct_upload_image_size'] ] ) ? $options['direct_upload_image_size'] : 'large';
 		$options['chart_bar_style']     = isset( $palette_options[ $options['chart_bar_style'] ] ) ? $options['chart_bar_style'] : 'blue';
+		$options['show_dashboard_processed_chart'] = ! empty( $options['show_dashboard_processed_chart'] ) ? 1 : 0;
+		$options['show_dashboard_processing_metrics'] = ! empty( $options['show_dashboard_processing_metrics'] ) ? 1 : 0;
 
 		return $options;
 	}
@@ -707,6 +717,14 @@ class WPAI_Alt_Text_Settings {
 				'label' => __( 'Chart Bar Color Style', 'dynamic-alt-tags' ),
 			),
 			array(
+				'id'    => 'show_dashboard_processed_chart',
+				'label' => __( 'Show Dashboard Processed Images Chart', 'dynamic-alt-tags' ),
+			),
+			array(
+				'id'    => 'show_dashboard_processing_metrics',
+				'label' => __( 'Show Dashboard Processing Metrics', 'dynamic-alt-tags' ),
+			),
+			array(
 				'id'    => 'overwrite_existing',
 				'label' => __( 'Overwrite Existing Alt Text', 'dynamic-alt-tags' ),
 			),
@@ -790,6 +808,8 @@ class WPAI_Alt_Text_Settings {
 		if ( ! isset( $chart_bar_style_options[ $current['chart_bar_style'] ] ) ) {
 			$current['chart_bar_style'] = 'blue';
 		}
+		$current['show_dashboard_processed_chart'] = ! empty( $input['show_dashboard_processed_chart'] ) ? 1 : 0;
+		$current['show_dashboard_processing_metrics'] = ! empty( $input['show_dashboard_processing_metrics'] ) ? 1 : 0;
 
 		$current['enable_background_processing'] = ! empty( $input['enable_background_processing'] ) ? 1 : 0;
 		$current['background_process_interval']  = isset( $input['background_process_interval'] ) ? max( 5, min( 60, absint( $input['background_process_interval'] ) ) ) : 5;
@@ -915,7 +935,7 @@ class WPAI_Alt_Text_Settings {
 			return;
 		}
 
-		if ( in_array( $id, array( 'enable_background_processing', 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'sync_caption_from_alt', 'sync_description_from_alt', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
+		if ( in_array( $id, array( 'enable_background_processing', 'use_url_mode', 'auto_apply_new_uploads', 'sync_title_from_alt', 'sync_caption_from_alt', 'sync_description_from_alt', 'show_dashboard_processed_chart', 'show_dashboard_processing_metrics', 'overwrite_existing', 'require_review', 'keep_data_on_delete' ), true ) ) {
 			printf(
 				'<label><input type="checkbox" name="%1$s" value="1" %2$s /></label>',
 				esc_attr( $name ),
@@ -924,6 +944,10 @@ class WPAI_Alt_Text_Settings {
 
 			if ( 'enable_background_processing' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, queued items can be processed automatically in the background using WP-Cron. It is recommended to keep this feature turned off if you are running into usage limits.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'show_dashboard_processed_chart' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, the main Dashboard page shows the Images Processed Over Time panel. This is off by default.', 'dynamic-alt-tags' ) . '</p>';
+			} elseif ( 'show_dashboard_processing_metrics' === $id ) {
+				echo '<p class="description">' . esc_html__( 'When enabled, the main Dashboard page shows the detailed processing metrics table below the chart area. This is off by default.', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'use_url_mode' === $id ) {
 				echo '<p class="description">' . esc_html__( 'When enabled, the plugin sends image URLs and the Worker fetches images remotely. Leave unchecked to use Direct Upload Mode (default, recommended).', 'dynamic-alt-tags' ) . '</p>';
 			} elseif ( 'auto_apply_new_uploads' === $id ) {
