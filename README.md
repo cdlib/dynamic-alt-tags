@@ -2,7 +2,7 @@
 
 Dynamic Alt Tags is a WordPress plugin for generating, reviewing, and applying AI-suggested alt text to images.
 
-It is currently owner-maintained by Eric Satzman. Pull requests are welcome, but releases and review cycles may be infrequent.
+This plugin is currently owner-maintained by [Eric Satzman](mailto:esatzman@ucop.edu). Pull requests are welcome, but releases and review cycles may be infrequent.
 
 ## Open Source
 
