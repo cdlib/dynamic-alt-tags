@@ -115,17 +115,19 @@ Developer tooling is Composer-based and currently includes PHPCS, WPCS, and PHP 
 
 ## Release Build
 
-Run the release script from the plugin root:
+Release packaging and hosted-updater tooling are intentionally kept outside this public plugin repository.
+
+Run the release script from the local Dynamic Alt Tags config repo instead:
 
 ```bash
-cd /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/app/public/wp-content/plugins/dynamic-alt-tags
+cd /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/dynamic-alt-tags-config
 ./build-release.sh
 ```
 
 The script:
 
-- reads the version from `dynamic-alt-tags.php`
-- builds `dynamic-alt-tags-<version>.zip`
+- reads the version from the local plugin repo
+- builds `dynamic-alt-tags-<version>.zip` from the local plugin source
 - writes the zip to `/Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/plugin-updates/`
 - copies the current `info.json` from the config repo into that same `plugin-updates` directory
 
