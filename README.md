@@ -13,15 +13,10 @@ This project is open source under the `MIT` license. See [`LICENSE`](LICENSE) fo
 - Queue-based processing for media library images
 - Search tab with live filters, taxonomy filtering, and bulk queue add
 - Active Queue review workflow with approve, skip, and generate actions
-- Human review before approval when you want it
+- Human review before approval if desired 
 - Per-image actions directly inside WordPress media workflows
-- Safer queue processing with capped manual runs, retry backoff, and provider pause handling
-- Support for self-hosted infrastructure
 - Optional title, caption, and description sync
-- Live metrics with reset tools, including day/week/month/year totals and processed-history charts
-- Configurable direct-upload image size and chart color styles
-- History bulk `Re-queue` support
-- Self-hosted plugin updates
+- Usage metrics 
 
 ## Getting Started
 
