@@ -115,10 +115,15 @@ class WPAI_Alt_Text_Admin {
 			file_exists( WPAI_ALT_TEXT_DIR . 'assets/admin.css' ) ? (string) filemtime( WPAI_ALT_TEXT_DIR . 'assets/admin.css' ) : WPAI_ALT_TEXT_VERSION
 		);
 
+		$script_dependencies = array();
+		if ( in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
+			$script_dependencies = array( 'wp-block-editor', 'wp-components', 'wp-compose', 'wp-data', 'wp-element', 'wp-hooks', 'wp-plugins' );
+		}
+
 		wp_enqueue_script(
 			'dynamic-alt-tags-admin',
 			WPAI_ALT_TEXT_URL . 'assets/admin.js',
-			array(),
+			$script_dependencies,
 			file_exists( WPAI_ALT_TEXT_DIR . 'assets/admin.js' ) ? (string) filemtime( WPAI_ALT_TEXT_DIR . 'assets/admin.js' ) : WPAI_ALT_TEXT_VERSION,
 			true
 		);

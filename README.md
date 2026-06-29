@@ -144,6 +144,13 @@ Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 
 ## Changelog
 
+### 1.0.9
+
+- Bump version to 1.0.9
+- Add Generate Alt Text controls for Classic Image Details and Gutenberg image blocks
+- Persist Classic Image Details alt text changes to the Media Library
+- Support generating alt text for Gutenberg image blocks that use external image URLs
+
 ### 1.0.8
 
 - Bump version to 1.0.8

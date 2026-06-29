@@ -485,10 +485,49 @@ class WPAI_Alt_Text_Plugin {
 		$debug['post_keys'] = array_keys( $_POST );
 
 		$attachment_id    = isset( $_POST['attachment_id'] ) ? absint( wp_unslash( $_POST['attachment_id'] ) ) : 0;
+		$image_url        = isset( $_POST['image_url'] ) ? esc_url_raw( wp_unslash( $_POST['image_url'] ) ) : '';
 		$action           = isset( $_POST['review_action'] ) ? sanitize_key( wp_unslash( $_POST['review_action'] ) ) : '';
 		$custom_alt       = isset( $_POST['custom_alt'] ) ? sanitize_text_field( wp_unslash( $_POST['custom_alt'] ) ) : '';
 
+		if ( ! $attachment_id && '' !== $image_url ) {
+			$attachment_id = $this->resolve_attachment_id_from_url( $image_url );
+		}
+
 		if ( ! $attachment_id ) {
+			if ( 'generate' === $action && '' !== $image_url ) {
+				if ( ! current_user_can( 'edit_posts' ) ) {
+					wp_send_json_error(
+						array(
+							'message' => __( 'You do not have permission to edit this image.', 'dynamic-alt-tags' ),
+						),
+						403
+					);
+				}
+
+				$result = $this->processor->generate_alt_text_for_url(
+					$image_url,
+					array(
+						'post_title' => isset( $_POST['post_title'] ) ? sanitize_text_field( wp_unslash( $_POST['post_title'] ) ) : '',
+					)
+				);
+
+				if ( empty( $result['ok'] ) ) {
+					wp_send_json_error(
+						array(
+							'message' => isset( $result['message'] ) ? (string) $result['message'] : __( 'Unable to generate suggested alt text for this image. Check provider settings/logs.', 'dynamic-alt-tags' ),
+						),
+						400
+					);
+				}
+
+				wp_send_json_success(
+					array(
+						'message'  => isset( $result['message'] ) ? (string) $result['message'] : '',
+						'alt_text' => isset( $result['alt_text'] ) ? (string) $result['alt_text'] : '',
+					)
+				);
+			}
+
 			wp_send_json_error(
 				array(
 					'message' => __( 'Invalid attachment.', 'dynamic-alt-tags' ),
@@ -509,6 +548,7 @@ class WPAI_Alt_Text_Plugin {
 		$before_row       = $this->queue_repo->get_row_by_attachment( $attachment_id );
 		$debug['request'] = array(
 			'attachment_id' => $attachment_id,
+			'image_url'      => '' !== $image_url ? '[redacted]' : '',
 			'action'        => $action,
 			'custom_alt'    => '[redacted]',
 		);
@@ -584,7 +624,7 @@ class WPAI_Alt_Text_Plugin {
 		$sync_caption     = ! empty( $options['sync_caption_from_alt'] );
 		$sync_description = ! empty( $options['sync_description_from_alt'] );
 
-		if ( ! $attachment_id || ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom', 'generate' ), true ) ) {
+		if ( ! $attachment_id || ! in_array( $action, array( 'approve', 'reject', 'skip', 'custom', 'generate', 'save_alt' ), true ) ) {
 			return array(
 				'ok'      => false,
 				'message' => __( 'Invalid upload action request.', 'dynamic-alt-tags' ),
@@ -603,6 +643,17 @@ class WPAI_Alt_Text_Plugin {
 					'message' => __( 'SVG images are not supported by the configured provider.', 'dynamic-alt-tags' ),
 				);
 			}
+
+		if ( 'save_alt' === $action ) {
+			update_post_meta( $attachment_id, '_wp_attachment_image_alt', $custom_alt );
+			update_post_meta( $attachment_id, '_ai_alt_review_required', 0 );
+
+			return array(
+				'ok'       => true,
+				'alt_text' => $custom_alt,
+				'message'  => __( 'Alt text saved to the media library.', 'dynamic-alt-tags' ),
+			);
+		}
 
 		if ( 'generate' === $action ) {
 			$row_before = $this->queue_repo->get_row_by_attachment( $attachment_id );
@@ -820,6 +871,71 @@ class WPAI_Alt_Text_Plugin {
 			'alt_text' => $custom_alt,
 			'message'  => __( 'The custom alt text is saved and applied.', 'dynamic-alt-tags' ),
 		);
+	}
+
+	/**
+	 * Resolve a Media Library attachment from a block/editor image URL.
+	 *
+	 * @param string $url Image URL.
+	 * @return int
+	 */
+	private function resolve_attachment_id_from_url( $url ) {
+		global $wpdb;
+
+		$url = esc_url_raw( (string) $url );
+		if ( '' === $url ) {
+			return 0;
+		}
+
+		$attachment_id = attachment_url_to_postid( $url );
+		if ( $attachment_id ) {
+			return absint( $attachment_id );
+		}
+
+		$parsed_url = wp_parse_url( $url );
+		if ( is_array( $parsed_url ) && ! empty( $parsed_url['scheme'] ) && ! empty( $parsed_url['host'] ) && ! empty( $parsed_url['path'] ) ) {
+			$url_without_query = $parsed_url['scheme'] . '://' . $parsed_url['host'] . $parsed_url['path'];
+			$attachment_id     = attachment_url_to_postid( $url_without_query );
+			if ( $attachment_id ) {
+				return absint( $attachment_id );
+			}
+		}
+
+		$uploads = wp_get_upload_dir();
+		$baseurl = isset( $uploads['baseurl'] ) ? (string) $uploads['baseurl'] : '';
+		if ( '' === $baseurl || 0 !== strpos( $url, $baseurl ) ) {
+			return 0;
+		}
+
+		$relative_path = ltrim( (string) wp_parse_url( substr( $url, strlen( $baseurl ) ), PHP_URL_PATH ), '/' );
+		if ( '' === $relative_path ) {
+			return 0;
+		}
+
+		$attachment_id = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value = %s LIMIT 1",
+				$relative_path
+			)
+		);
+		if ( $attachment_id ) {
+			return absint( $attachment_id );
+		}
+
+		$original_relative_path = preg_replace( '/-\d+x\d+(\.[a-zA-Z0-9]+)$/', '$1', $relative_path );
+		if ( is_string( $original_relative_path ) && $original_relative_path !== $relative_path ) {
+			$attachment_id = (int) $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value = %s LIMIT 1",
+					$original_relative_path
+				)
+			);
+			if ( $attachment_id ) {
+				return absint( $attachment_id );
+			}
+		}
+
+		return 0;
 	}
 
 	/**

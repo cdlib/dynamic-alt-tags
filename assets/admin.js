@@ -928,9 +928,8 @@
 					return;
 				}
 
-				var message = payload.data && payload.data.message ? String(payload.data.message) : 'Action applied.';
-				resultNode.textContent = message;
-				resultNode.classList.add('ai-alt-message-success');
+				resultNode.textContent = '';
+				resultNode.classList.remove('ai-alt-message-success');
 
 				if (payload.data && typeof payload.data.alt_text !== 'undefined') {
 					var altText = String(payload.data.alt_text || '');
@@ -957,6 +956,727 @@
 				}
 			});
 	}
+
+	function getImageDetailsAltField(container) {
+		if (!(container instanceof HTMLElement)) {
+			return null;
+		}
+
+		var selectors = [
+			'#image-details-alt-text',
+			'textarea[data-setting="alt"]',
+			'input[data-setting="alt"]',
+			'textarea[name="alt"]',
+			'input[name="alt"]',
+			'textarea#attachment-details-two-column-alt-text',
+			'input#attachment-details-two-column-alt-text'
+		];
+		for (var i = 0; i < selectors.length; i += 1) {
+			var field = container.querySelector(selectors[i]);
+			if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) {
+				return field;
+			}
+		}
+
+		return null;
+	}
+
+	function getClassicImageDetailsAttachmentId(container) {
+		if (container instanceof HTMLElement) {
+			var dataId = String(container.getAttribute('data-attachment-id') || container.getAttribute('data-id') || '');
+			if (/^[1-9][0-9]*$/.test(dataId)) {
+				return dataId;
+			}
+
+			var idNode = container.querySelector('[data-attachment-id], [data-id], [class*="wp-image-"]');
+			if (idNode instanceof HTMLElement) {
+				dataId = String(idNode.getAttribute('data-attachment-id') || idNode.getAttribute('data-id') || '');
+				if (/^[1-9][0-9]*$/.test(dataId)) {
+					return dataId;
+				}
+				var classMatch = String(idNode.className || '').match(/wp-image-([0-9]+)/);
+				if (classMatch && classMatch[1]) {
+					return classMatch[1];
+				}
+			}
+		}
+
+		if (window.wp && window.wp.media && window.wp.media.frame && typeof window.wp.media.frame.state === 'function') {
+			try {
+				var state = window.wp.media.frame.state();
+				var image = state && state.image ? state.image : (state && typeof state.get === 'function' ? state.get('image') : null);
+				if (image && typeof image.get === 'function') {
+					var attachment = image.get('attachment');
+					var attachmentId = image.get('attachment_id') || image.get('id');
+					if (!attachmentId && attachment && typeof attachment.get === 'function') {
+						attachmentId = attachment.get('id');
+					}
+					if (!attachmentId && attachment && attachment.id) {
+						attachmentId = attachment.id;
+					}
+					if (/^[1-9][0-9]*$/.test(String(attachmentId || ''))) {
+						return String(attachmentId);
+					}
+				}
+			} catch (e) {
+				// Fall through to TinyMCE-selected image detection.
+			}
+		}
+
+		if (window.tinymce && window.tinymce.activeEditor && window.tinymce.activeEditor.selection) {
+			try {
+				var selectedNode = window.tinymce.activeEditor.selection.getNode();
+				var selectedClass = selectedNode && selectedNode.className ? String(selectedNode.className) : '';
+				var selectedMatch = selectedClass.match(/wp-image-([0-9]+)/);
+				if (selectedMatch && selectedMatch[1]) {
+					return selectedMatch[1];
+				}
+			} catch (e) {
+				// Ignore editor selection access errors.
+			}
+		}
+
+		return '';
+	}
+
+	function getAttachmentIdFromImageDetailsView(view) {
+		if (!view || !view.model) {
+			return '';
+		}
+
+		var attachment = view.model.attachment || null;
+		var attachmentId = '';
+		if (attachment && typeof attachment.get === 'function') {
+			attachmentId = attachment.get('id') || attachment.id || '';
+		} else if (attachment && attachment.id) {
+			attachmentId = attachment.id;
+		}
+
+		if (!attachmentId && typeof view.model.get === 'function') {
+			attachmentId = view.model.get('attachment_id') || view.model.get('id') || '';
+			var modelAttachment = view.model.get('attachment');
+			if (!attachmentId && modelAttachment && typeof modelAttachment.get === 'function') {
+				attachmentId = modelAttachment.get('id') || modelAttachment.id || '';
+			}
+		}
+
+		return /^[1-9][0-9]*$/.test(String(attachmentId || '')) ? String(attachmentId) : '';
+	}
+
+	function getSelectedImageBlock() {
+		if (!window.wp || !window.wp.data || typeof window.wp.data.select !== 'function') {
+			return null;
+		}
+
+		try {
+			var editor = window.wp.data.select('core/block-editor') || window.wp.data.select('core/editor');
+			var block = null;
+			if (editor && typeof editor.getSelectedBlock === 'function') {
+				block = editor.getSelectedBlock();
+			}
+			if (!block && editor && typeof editor.getSelectedBlockClientId === 'function' && typeof editor.getBlock === 'function') {
+				var clientId = editor.getSelectedBlockClientId();
+				block = clientId ? editor.getBlock(clientId) : null;
+			}
+			if (!block || block.name !== 'core/image') {
+				return null;
+			}
+			return block;
+		} catch (e) {
+			return null;
+		}
+	}
+
+	function getSelectedImageBlockAttachmentId() {
+		var block = getSelectedImageBlock();
+		var id = block && block.attributes ? (block.attributes.id || block.attributes.mediaId || block.attributes.attachmentId) : 0;
+		if (!id) {
+			id = getSelectedImageBlockAttachmentIdFromDom();
+		}
+		return /^[1-9][0-9]*$/.test(String(id || '')) ? String(id) : '';
+	}
+
+	function getSelectedImageBlockAttachmentIdFromDom() {
+		var selectors = [
+			'.block-editor-block-list__block.is-selected img',
+			'.block-editor-block-list__block.is-highlighted img',
+			'.wp-block-image.is-selected img',
+			'.wp-block-image img'
+		];
+
+		for (var i = 0; i < selectors.length; i += 1) {
+			var nodes = document.querySelectorAll(selectors[i]);
+			for (var j = 0; j < nodes.length; j += 1) {
+				var node = nodes[j];
+				if (!(node instanceof HTMLElement) || !isVisibleElement(node)) {
+					continue;
+				}
+
+				var dataId = String(node.getAttribute('data-id') || node.getAttribute('data-attachment-id') || '');
+				if (/^[1-9][0-9]*$/.test(dataId)) {
+					return dataId;
+				}
+
+				var classMatch = String(node.className || '').match(/wp-image-([0-9]+)/);
+				if (classMatch && classMatch[1]) {
+					return classMatch[1];
+				}
+			}
+		}
+
+		return '';
+	}
+
+	function getSelectedImageBlockUrl() {
+		var block = getSelectedImageBlock();
+		var url = block && block.attributes ? String(block.attributes.url || '') : '';
+		if (url) {
+			return url;
+		}
+
+		var selectors = [
+			'.block-editor-block-list__block.is-selected img',
+			'.block-editor-block-list__block.is-highlighted img',
+			'.wp-block-image.is-selected img',
+			'.wp-block-image img'
+		];
+		for (var i = 0; i < selectors.length; i += 1) {
+			var nodes = document.querySelectorAll(selectors[i]);
+			for (var j = 0; j < nodes.length; j += 1) {
+				var node = nodes[j];
+				if (!(node instanceof HTMLImageElement) || !isVisibleElement(node)) {
+					continue;
+				}
+				url = String(node.currentSrc || node.src || '');
+				if (url) {
+					return url;
+				}
+			}
+		}
+
+		return '';
+	}
+
+	function isVisibleElement(node) {
+		if (!(node instanceof HTMLElement)) {
+			return false;
+		}
+
+		return Boolean(node.offsetWidth || node.offsetHeight || node.getClientRects().length);
+	}
+
+	function setSelectedImageBlockAlt(altText) {
+		var block = getSelectedImageBlock();
+		if (!block || !block.clientId || !window.wp || !window.wp.data || typeof window.wp.data.dispatch !== 'function') {
+			return;
+		}
+
+		try {
+			var editor = window.wp.data.dispatch('core/block-editor') || window.wp.data.dispatch('core/editor');
+			if (editor && typeof editor.updateBlockAttributes === 'function') {
+				editor.updateBlockAttributes(block.clientId, { alt: String(altText || '') });
+			}
+		} catch (e) {
+			// Ignore editor state update errors.
+		}
+	}
+
+	function getGutenbergAltField() {
+		var selectors = [
+			'textarea[aria-label="Alternative text"]',
+			'input[aria-label="Alternative text"]',
+			'textarea[aria-label="Alt text"]',
+			'input[aria-label="Alt text"]',
+			'textarea[id*="alt" i]',
+			'input[id*="alt" i]',
+			'textarea[name*="alt" i]',
+			'input[name*="alt" i]'
+		];
+		for (var i = 0; i < selectors.length; i += 1) {
+			var fields = [];
+			try {
+				fields = document.querySelectorAll(selectors[i]);
+			} catch (e) {
+				fields = [];
+			}
+			for (var k = 0; k < fields.length; k += 1) {
+				var field = fields[k];
+				if ((field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement) && isVisibleElement(field) && field.closest('.interface-interface-skeleton__sidebar, .editor-sidebar, .block-editor-block-inspector')) {
+					return field;
+				}
+			}
+		}
+
+		var labels = document.querySelectorAll('.interface-interface-skeleton__sidebar label, .editor-sidebar label, .block-editor-block-inspector label, .components-base-control__label');
+		for (var j = 0; j < labels.length; j += 1) {
+			var label = labels[j];
+			var labelText = String(label.textContent || '').trim().toLowerCase();
+			if (labelText.indexOf('alternative text') === -1 && labelText.indexOf('alt text') === -1) {
+				continue;
+			}
+			var control = label.closest('.components-base-control, .components-textarea-control, .components-panel__row, .block-editor-inspector-controls') || label.parentElement;
+			var input = control ? control.querySelector('textarea, input[type="text"]') : null;
+			if ((input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement) && isVisibleElement(input)) {
+				return input;
+			}
+		}
+
+		return null;
+	}
+
+	function postUploadAction(attachmentId, reviewAction, customAlt, imageUrl) {
+		var adminData = window.aiAltAdmin || {};
+		var ajaxUrl = typeof adminData.ajaxUrl === 'string' && adminData.ajaxUrl ? adminData.ajaxUrl : (typeof window.ajaxurl === 'string' ? window.ajaxurl : '');
+		var nonce = typeof adminData.uploadActionNonce === 'string' ? adminData.uploadActionNonce : '';
+
+		if ((!attachmentId && !imageUrl) || !ajaxUrl || !nonce) {
+			return Promise.reject(new Error('missing_request_data'));
+		}
+
+		var body = new URLSearchParams();
+		body.append('action', 'ai_alt_upload_action_ajax');
+		body.append('_ajax_nonce', nonce);
+		body.append('attachment_id', attachmentId);
+		body.append('image_url', imageUrl || '');
+		body.append('review_action', reviewAction);
+		body.append('custom_alt', customAlt || '');
+
+		return fetch(ajaxUrl, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+			},
+			body: body.toString()
+		}).then(function (response) {
+			return response.json();
+		});
+	}
+
+	function saveEditorAltText(attachmentId, altText, resultNode) {
+		if (!attachmentId) {
+			return;
+		}
+
+		postUploadAction(attachmentId, 'save_alt', altText || '')
+			.then(function (payload) {
+				if (!resultNode || !(resultNode instanceof HTMLElement)) {
+					return;
+				}
+				if (!payload || payload.success !== true) {
+					resultNode.textContent = getPayloadMessage(payload, 'Unable to save alt text to the media library.');
+					resultNode.classList.add('ai-alt-message-error');
+					resultNode.classList.remove('ai-alt-message-success');
+					return;
+				}
+				resultNode.textContent = getPayloadMessage(payload, 'Alt text saved to the media library.');
+				resultNode.classList.add('ai-alt-message-success');
+				resultNode.classList.remove('ai-alt-message-error');
+			})
+			.catch(function () {
+				if (resultNode instanceof HTMLElement) {
+					resultNode.textContent = 'Unable to save alt text to the media library.';
+					resultNode.classList.add('ai-alt-message-error');
+					resultNode.classList.remove('ai-alt-message-success');
+				}
+			});
+	}
+
+	function generateEditorAltText(trigger, attachmentId, altField, resultNode, container) {
+		var adminData = window.aiAltAdmin || {};
+		var i18n = adminData.i18n || {};
+		var imageUrl = trigger && trigger.getAttribute ? String(trigger.getAttribute('data-image-url') || '') : '';
+		if (!imageUrl) {
+			imageUrl = getSelectedImageBlockUrl();
+		}
+
+		var canUpdateSelectedImageBlock = Boolean(getSelectedImageBlock());
+		if (!(altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement) && !canUpdateSelectedImageBlock) {
+			if (resultNode instanceof HTMLElement) {
+				resultNode.textContent = 'Unable to find the alt text field. Reselect the image and try again.';
+				resultNode.classList.add('ai-alt-message-error');
+				resultNode.classList.remove('ai-alt-message-success');
+			}
+			return;
+		}
+
+		if (!attachmentId && !imageUrl) {
+			if (resultNode instanceof HTMLElement) {
+				resultNode.textContent = 'Unable to identify this image. Choose a Media Library image and try again.';
+				resultNode.classList.add('ai-alt-message-error');
+				resultNode.classList.remove('ai-alt-message-success');
+			}
+			return;
+		}
+
+		if (trigger instanceof HTMLButtonElement || trigger instanceof HTMLInputElement) {
+			trigger.disabled = true;
+			trigger.setAttribute('aria-busy', 'true');
+		}
+		if (resultNode instanceof HTMLElement) {
+			resultNode.textContent = i18n.rowProcessing || 'Processing image...';
+			resultNode.classList.remove('ai-alt-message-error');
+			resultNode.classList.remove('ai-alt-message-success');
+		}
+
+		postUploadAction(attachmentId, 'generate', '', imageUrl)
+			.then(function (payload) {
+				if (!payload || payload.success !== true) {
+					var errorMessage = getPayloadMessage(payload, i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.');
+					if (resultNode instanceof HTMLElement) {
+						resultNode.textContent = errorMessage;
+						resultNode.classList.add('ai-alt-message-error');
+					}
+					return;
+				}
+
+				var altText = payload.data && typeof payload.data.alt_text !== 'undefined' ? String(payload.data.alt_text || '') : '';
+				if (altText.trim()) {
+					if (altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement) {
+						altField.value = altText;
+						altField.dispatchEvent(new Event('input', { bubbles: true }));
+						altField.dispatchEvent(new Event('change', { bubbles: true }));
+					}
+					setSelectedImageBlockAlt(altText);
+					if (attachmentId) {
+						applyAltAndMetaAcrossUi(
+							attachmentId,
+							altText,
+							Boolean(adminData && adminData.syncTitleFromAlt),
+							Boolean(adminData && adminData.syncCaptionFromAlt),
+							Boolean(adminData && adminData.syncDescriptionFromAlt),
+							container
+						);
+					}
+				}
+				if (resultNode instanceof HTMLElement) {
+					resultNode.textContent = '';
+					resultNode.classList.remove('ai-alt-message-success');
+				}
+			})
+			.catch(function () {
+				if (resultNode instanceof HTMLElement) {
+					resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
+					resultNode.classList.add('ai-alt-message-error');
+				}
+			})
+			.finally(function () {
+				if (trigger instanceof HTMLButtonElement || trigger instanceof HTMLInputElement) {
+					trigger.disabled = false;
+					trigger.removeAttribute('aria-busy');
+					if (trigger instanceof HTMLButtonElement) {
+						trigger.textContent = 'Generate Alt Text';
+					}
+				}
+				});
+		}
+
+	function registerGutenbergGenerateAltControl() {
+		if (!window.wp || !window.wp.hooks || !window.wp.compose || !window.wp.element || !window.wp.components) {
+			return false;
+		}
+
+		var InspectorControls = window.wp.blockEditor && window.wp.blockEditor.InspectorControls ? window.wp.blockEditor.InspectorControls : (window.wp.editor && window.wp.editor.InspectorControls ? window.wp.editor.InspectorControls : null);
+		if (!InspectorControls || window.aiAltNativeGutenbergControls) {
+			return Boolean(window.aiAltNativeGutenbergControls);
+		}
+
+		var createElement = window.wp.element.createElement;
+		var Fragment = window.wp.element.Fragment;
+		var useState = window.wp.element.useState;
+		var Button = window.wp.components.Button;
+		var createHigherOrderComponent = window.wp.compose.createHigherOrderComponent;
+
+		if (typeof useState !== 'function' || typeof Button !== 'function' || typeof createHigherOrderComponent !== 'function') {
+			return false;
+		}
+
+		var withGenerateAltTextControl = createHigherOrderComponent(function (BlockEdit) {
+			return function (props) {
+				var statusState = useState('');
+				var statusMessage = statusState[0];
+				var setStatusMessage = statusState[1];
+				var busyState = useState(false);
+				var isBusy = busyState[0];
+				var setIsBusy = busyState[1];
+				var isImageBlock = props && props.name === 'core/image';
+				var attributes = props && props.attributes ? props.attributes : {};
+				var attachmentId = attributes.id || attributes.mediaId || attributes.attachmentId || '';
+				var imageUrl = attributes.url || '';
+				var canGenerate = Boolean(attachmentId || imageUrl);
+
+				function updateStatus(message, isError) {
+					setStatusMessage({
+						message: message,
+						isError: Boolean(isError)
+					});
+				}
+
+				function generateAltText() {
+					if (!canGenerate || isBusy) {
+						return;
+					}
+
+					setIsBusy(true);
+					updateStatus('Processing image...', false);
+
+					postUploadAction(attachmentId, 'generate', '', imageUrl)
+						.then(function (payload) {
+							if (!payload || payload.success !== true) {
+								updateStatus(getPayloadMessage(payload, 'Unable to generate alt text. Please try again.'), true);
+								return;
+							}
+
+							var altText = payload.data && typeof payload.data.alt_text !== 'undefined' ? String(payload.data.alt_text || '') : '';
+							if (altText.trim() && props && typeof props.setAttributes === 'function') {
+								props.setAttributes({ alt: altText });
+								setSelectedImageBlockAlt(altText);
+							}
+							updateStatus('', false);
+						})
+						.catch(function () {
+							updateStatus('Unable to generate alt text. Please try again.', true);
+						})
+						.finally(function () {
+							setIsBusy(false);
+						});
+				}
+
+				return createElement(
+					Fragment,
+					null,
+					createElement(BlockEdit, props),
+					isImageBlock ? createElement(
+						InspectorControls,
+						{ group: 'settings' },
+						createElement(
+							'div',
+							{ className: 'ai-alt-gutenberg-native-control' },
+							createElement(
+								Button,
+								{
+									variant: 'primary',
+									isBusy: isBusy,
+									disabled: !canGenerate || isBusy,
+									onClick: generateAltText
+								},
+								isBusy ? 'Generating...' : 'Generate Alt Text'
+							),
+							statusMessage && statusMessage.message ? createElement(
+								'p',
+								{
+									className: 'description ai-alt-upload-action-result ' + (statusMessage.isError ? 'ai-alt-message-error' : 'ai-alt-message-success'),
+									'aria-live': 'polite'
+								},
+								statusMessage.message
+							) : null
+						)
+					) : null
+				);
+			};
+		}, 'withGenerateAltTextControl');
+
+		window.wp.hooks.addFilter('editor.BlockEdit', 'dynamic-alt-tags/generate-alt-text-control', withGenerateAltTextControl);
+		window.aiAltNativeGutenbergControls = true;
+		return true;
+	}
+
+	registerGutenbergGenerateAltControl();
+
+	function initClassicImageDetailsControls() {
+		var panels = document.querySelectorAll('.media-modal.image-details, .media-modal .image-details, .media-modal-content .image-details, .media-frame-content .image-details');
+		panels.forEach(function (panel) {
+			if (!(panel instanceof HTMLElement) || panel.querySelector('.ai-alt-editor-generate-wrap')) {
+				return;
+			}
+
+			var altField = getImageDetailsAltField(panel);
+			if (!(altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement)) {
+				return;
+			}
+
+			var attachmentId = getClassicImageDetailsAttachmentId(panel);
+			if (!attachmentId) {
+				return;
+			}
+
+			var wrap = document.createElement('div');
+			wrap.className = 'ai-alt-editor-generate-wrap ai-alt-classic-image-generate-wrap';
+			wrap.innerHTML = '<button type="button" class="button button-primary ai-alt-editor-generate" data-attachment-id="' + escapeHtml(attachmentId) + '" onclick="return window.aiAltGenerateEditorAltText ? window.aiAltGenerateEditorAltText(this, event) : false;">Generate Alt Text</button><p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
+
+			var insertionPoint = panel.querySelector('.embed-media-settings .actions, .image .actions, .actions') || altField.closest('.setting, label, .media-types-required-info') || altField;
+			insertionPoint.insertAdjacentElement('afterend', wrap);
+		});
+	}
+
+	function injectClassicImageDetailsControlForView(view) {
+		var panel = view && view.el instanceof HTMLElement ? view.el : null;
+		if (!(panel instanceof HTMLElement) || panel.querySelector('.ai-alt-editor-generate-wrap')) {
+			return;
+		}
+
+		var altField = getImageDetailsAltField(panel);
+		if (!(altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement)) {
+			return;
+		}
+
+		var attachmentId = getAttachmentIdFromImageDetailsView(view) || getClassicImageDetailsAttachmentId(panel);
+		if (!attachmentId) {
+			return;
+		}
+
+		var wrap = document.createElement('div');
+		wrap.className = 'ai-alt-editor-generate-wrap ai-alt-classic-image-generate-wrap';
+		wrap.innerHTML = '<button type="button" class="button button-primary ai-alt-editor-generate" data-attachment-id="' + escapeHtml(attachmentId) + '" onclick="return window.aiAltGenerateEditorAltText ? window.aiAltGenerateEditorAltText(this, event) : false;">Generate Alt Text</button><p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
+
+		var insertionPoint = panel.querySelector('.embed-media-settings .actions, .image .actions, .actions') || altField.closest('.setting, label, .media-types-required-info') || altField;
+		insertionPoint.insertAdjacentElement('afterend', wrap);
+	}
+
+	function patchWordPressImageDetailsView() {
+		if (!window.wp || !window.wp.media || !window.wp.media.view || !window.wp.media.view.ImageDetails) {
+			return false;
+		}
+
+		var proto = window.wp.media.view.ImageDetails.prototype;
+		if (!proto || proto.aiAltImageDetailsPatched) {
+			return true;
+		}
+
+		var originalPostRender = proto.postRender;
+		proto.postRender = function () {
+			var result = originalPostRender ? originalPostRender.apply(this, arguments) : undefined;
+			var view = this;
+			window.setTimeout(function () {
+				injectClassicImageDetailsControlForView(view);
+			}, 0);
+			return result;
+		};
+		proto.aiAltImageDetailsPatched = true;
+		return true;
+	}
+
+	function captureClassicImageDetailsUpdate(event) {
+		var target = event.target;
+		if (!(target instanceof HTMLElement)) {
+			return;
+		}
+
+		var trigger = target.closest('button, input[type="submit"], input[type="button"]');
+		if (!(trigger instanceof HTMLButtonElement) && !(trigger instanceof HTMLInputElement)) {
+			return;
+		}
+		if (!trigger.classList.contains('media-button-update') && !trigger.classList.contains('media-button-select')) {
+			return;
+		}
+
+		var imageDetailsPanel = document.querySelector('.media-modal.image-details, .media-modal .image-details, .media-modal-content .image-details, .media-frame-content .image-details');
+		var imageDetailsAltField = imageDetailsPanel ? getImageDetailsAltField(imageDetailsPanel) : getImageDetailsAltField(document.body);
+		var imageDetailsAttachmentId = imageDetailsPanel ? getClassicImageDetailsAttachmentId(imageDetailsPanel) : getClassicImageDetailsAttachmentId(document.body);
+		if (imageDetailsAltField && imageDetailsAttachmentId) {
+			saveEditorAltText(imageDetailsAttachmentId, String(imageDetailsAltField.value || ''), null);
+		}
+	}
+
+	function initGutenbergImageAltControls() {
+		var attachmentId = getSelectedImageBlockAttachmentId();
+		var imageUrl = getSelectedImageBlockUrl();
+		var altField = getGutenbergAltField();
+		var selectedImageBlock = getSelectedImageBlock();
+		if (!(altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement) && !selectedImageBlock) {
+			return;
+		}
+
+		var control = null;
+		if (altField instanceof HTMLInputElement || altField instanceof HTMLTextAreaElement) {
+			control = altField.closest('.components-base-control, .components-textarea-control, .components-panel__row') || altField.parentElement;
+		}
+		if (!(control instanceof HTMLElement)) {
+			control = document.querySelector('.interface-interface-skeleton__sidebar .editor-sidebar__panel, .editor-sidebar__panel, .block-editor-block-inspector');
+		}
+		if (!(control instanceof HTMLElement)) {
+			return;
+		}
+
+		var existingWrap = control.querySelector('.ai-alt-editor-generate-wrap');
+		if (existingWrap instanceof HTMLElement) {
+			var existingButton = existingWrap.querySelector('.ai-alt-editor-generate');
+			if (existingButton instanceof HTMLButtonElement || existingButton instanceof HTMLInputElement) {
+				existingButton.setAttribute('data-attachment-id', attachmentId);
+				existingButton.setAttribute('data-image-url', imageUrl);
+				existingButton.disabled = !attachmentId && !imageUrl;
+				bindEditorGenerateButton(existingButton);
+			}
+			return;
+		}
+
+		var wrap = document.createElement('div');
+		wrap.className = 'ai-alt-editor-generate-wrap ai-alt-gutenberg-generate-wrap';
+		wrap.innerHTML = '<button type="button" class="button button-primary ai-alt-editor-generate" data-attachment-id="' + escapeHtml(attachmentId) + '" data-image-url="' + escapeHtml(imageUrl) + '" onclick="return window.aiAltGenerateEditorAltText ? window.aiAltGenerateEditorAltText(this, event) : false;">Generate Alt Text</button><p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
+		var button = wrap.querySelector('.ai-alt-editor-generate');
+		if (button instanceof HTMLButtonElement || button instanceof HTMLInputElement) {
+			button.disabled = !attachmentId && !imageUrl;
+			bindEditorGenerateButton(button);
+		}
+		control.appendChild(wrap);
+	}
+
+	function bindEditorGenerateButton(button) {
+		if (!(button instanceof HTMLButtonElement) && !(button instanceof HTMLInputElement)) {
+			return;
+		}
+		if (button.getAttribute('data-ai-alt-bound') === '1') {
+			return;
+		}
+
+		button.setAttribute('data-ai-alt-bound', '1');
+		button.addEventListener('click', handleEditorGenerateButtonClick);
+	}
+
+	function handleEditorGenerateButtonClick(event) {
+		var target = event.target;
+		if (!(target instanceof HTMLElement)) {
+			return;
+		}
+
+		var button = target.closest('.ai-alt-editor-generate');
+		if (!(button instanceof HTMLButtonElement) && !(button instanceof HTMLInputElement)) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		var editorContainer = button.closest('.image-details, .components-base-control, .components-panel__row, .components-textarea-control, .block-editor-block-inspector') || document.body;
+		var editorAltField = getImageDetailsAltField(editorContainer) || editorContainer.querySelector('textarea, input[type="text"]') || getGutenbergAltField();
+		var editorAttachmentId = String(button.getAttribute('data-attachment-id') || '') || getSelectedImageBlockAttachmentId() || getClassicImageDetailsAttachmentId(editorContainer);
+		var editorResultNode = button.parentElement ? button.parentElement.querySelector('.ai-alt-upload-action-result') : null;
+		if (button instanceof HTMLButtonElement) {
+			button.textContent = 'Generating...';
+		}
+		if (editorResultNode instanceof HTMLElement) {
+			editorResultNode.textContent = 'Processing image...';
+			editorResultNode.classList.remove('ai-alt-message-error');
+			editorResultNode.classList.remove('ai-alt-message-success');
+		}
+		generateEditorAltText(button, editorAttachmentId, editorAltField, editorResultNode, editorContainer);
+	}
+
+	window.aiAltGenerateEditorAltText = function (button, event) {
+		if (event && typeof event.preventDefault === 'function') {
+			event.preventDefault();
+		}
+		if (event && typeof event.stopPropagation === 'function') {
+			event.stopPropagation();
+		}
+
+		handleEditorGenerateButtonClick({
+			target: button,
+			preventDefault: function () {},
+			stopPropagation: function () {}
+		});
+		return false;
+	};
 
 	function processQueueRow(trigger) {
 		var adminData = window.aiAltAdmin || {};
@@ -1747,6 +2467,16 @@
 			return;
 		}
 
+		if (trigger.classList.contains('ai-alt-editor-generate')) {
+			event.preventDefault();
+			var editorContainer = trigger.closest('.image-details, .components-base-control, .components-panel__row, .components-textarea-control, .block-editor-block-inspector') || document.body;
+			var editorAltField = getImageDetailsAltField(editorContainer) || getGutenbergAltField();
+			var editorAttachmentId = String(trigger.getAttribute('data-attachment-id') || '') || getSelectedImageBlockAttachmentId() || getClassicImageDetailsAttachmentId(editorContainer);
+			var editorResultNode = trigger.parentElement ? trigger.parentElement.querySelector('.ai-alt-upload-action-result') : null;
+			generateEditorAltText(trigger, editorAttachmentId, editorAltField, editorResultNode, editorContainer);
+			return;
+		}
+
 		if (trigger.classList.contains('ai-alt-toggle-token')) {
 			var inputId = trigger.getAttribute('data-target');
 			if (!inputId) {
@@ -1836,6 +2566,14 @@
 			return;
 		}
 
+		var gutenbergAltField = getGutenbergAltField();
+		if (target === gutenbergAltField) {
+			var blockAttachmentId = getSelectedImageBlockAttachmentId();
+			if (blockAttachmentId) {
+				saveEditorAltText(blockAttachmentId, String(target.value || ''), null);
+			}
+		}
+
 				var isUploadActionSelect = target instanceof HTMLSelectElement && (target.classList.contains('ai-alt-upload-action') || /\[ai_alt_action\]$/.test(String(target.name || '')));
 				if (isUploadActionSelect) {
 					var actionValue = String(target.value || '');
@@ -1868,12 +2606,25 @@
 		});
 
 		document.addEventListener('DOMContentLoaded', function () {
+			registerGutenbergGenerateAltControl();
+			document.addEventListener('click', captureClassicImageDetailsUpdate, true);
+			document.addEventListener('click', handleEditorGenerateButtonClick, true);
+			patchWordPressImageDetailsView();
+			var imageDetailsPatchAttempts = 0;
+			var imageDetailsPatchTimer = window.setInterval(function () {
+				imageDetailsPatchAttempts += 1;
+				if (patchWordPressImageDetailsView() || imageDetailsPatchAttempts > 40) {
+					window.clearInterval(imageDetailsPatchTimer);
+				}
+			}, 250);
 			placeRetrieveButtons();
 			initSettingsTabs();
 			initSettingsMetricsRefresh();
 			initQueueTabNoticeReset();
 			initQueueBrowseTab();
 			initMediaGridReturnToBrowse();
+			initClassicImageDetailsControls();
+			initGutenbergImageAltControls();
 			initProcessedCharts(document);
 			autoSizeSuggestedAltTextareas(document);
 			var lockedAdminRoleCheckboxes = document.querySelectorAll('input.ai-alt-admin-role-lock');
@@ -1922,7 +2673,10 @@
 	});
 
 	var attachmentObserver = new MutationObserver(function () {
+		patchWordPressImageDetailsView();
 		placeRetrieveButtons();
+		initClassicImageDetailsControls();
+		initGutenbergImageAltControls();
 	});
 
 	attachmentObserver.observe(document.documentElement, {
@@ -1931,7 +2685,10 @@
 	});
 
 	window.addEventListener('resize', function () {
+		patchWordPressImageDetailsView();
 		placeRetrieveButtons();
+		initClassicImageDetailsControls();
+		initGutenbergImageAltControls();
 	});
 
 	function getQueueProgressNodes() {

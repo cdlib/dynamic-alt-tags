@@ -242,6 +242,55 @@ class WPAI_Alt_Text_Processor {
 	}
 
 	/**
+	 * Generate alt text for a public image URL that is not a Media Library attachment.
+	 *
+	 * @param string $image_url Public image URL.
+	 * @param array  $context Context.
+	 * @return array<string,mixed>
+	 */
+	public function generate_alt_text_for_url( $image_url, $context = array() ) {
+		$started_at = microtime( true );
+		$image_url  = esc_url_raw( (string) $image_url );
+
+		if ( '' === $image_url ) {
+			return array(
+				'ok'      => false,
+				'message' => __( 'Invalid image URL.', 'dynamic-alt-tags' ),
+			);
+		}
+
+		$provider_started_at = microtime( true );
+		$result              = $this->provider->generate_caption( $image_url, $context );
+		$provider_time       = $this->elapsed_ms( $provider_started_at );
+		if ( is_wp_error( $result ) ) {
+			$this->record_processing_metric( false, $started_at, $provider_time, true, 0 );
+			return array(
+				'ok'         => false,
+				'message'    => $result->get_error_message(),
+				'error_code' => $result->get_error_code(),
+			);
+		}
+
+		$caption  = isset( $result['caption'] ) ? (string) $result['caption'] : '';
+		$alt_text = $this->generator->to_alt_text( $caption );
+		if ( ! $this->generator->is_usable_alt( $alt_text ) ) {
+			$this->record_processing_metric( false, $started_at, $provider_time, true, 0 );
+			return array(
+				'ok'      => false,
+				'message' => __( 'Generated alt text did not pass quality checks.', 'dynamic-alt-tags' ),
+			);
+		}
+
+		$this->record_processing_metric( true, $started_at, $provider_time, true, 0 );
+
+		return array(
+			'ok'       => true,
+			'alt_text' => $alt_text,
+			'message'  => __( 'The suggested alt text is retrieved and applied.', 'dynamic-alt-tags' ),
+		);
+	}
+
+	/**
 	 * Approve row and persist alt text.
 	 *
 	 * @param int    $row_id Row ID.

@@ -84,6 +84,33 @@
 	line-height: 1;
 }
 
+.ai-alt-editor-generate-wrap {
+	margin-top: 8px;
+}
+
+.ai-alt-editor-generate-wrap .ai-alt-upload-action-result {
+	margin: 6px 0 0;
+}
+
+.ai-alt-gutenberg-generate-wrap .button {
+	width: auto;
+}
+
+.ai-alt-gutenberg-native-control {
+	margin: 12px 0 16px;
+	padding: 0 16px;
+}
+
+.ai-alt-gutenberg-native-control .ai-alt-upload-action-result {
+	margin: 8px 0 0;
+}
+
+.image-details .ai-alt-classic-image-generate-wrap {
+	clear: both;
+	margin-top: 10px;
+	text-align: left;
+}
+
 .ai-alt-wrap .ai-alt-connection-status {
 	border: 1px solid #ccd0d4;
 	border-left-width: 4px;
