@@ -95,7 +95,6 @@ class WPAI_Alt_Text_Activator {
 				'direct_upload_image_size' => 'large',
 				'chart_bar_style'     => 'blue',
 				'show_dashboard_processed_chart' => 0,
-				'show_dashboard_processing_metrics' => 0,
 				'enable_background_processing' => 0,
 				'background_process_interval'  => 5,
 				'background_batch_size'        => 5,

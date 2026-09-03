@@ -135,7 +135,6 @@ Bulk actions:
 * `Min Confidence`
 * `Chart Bar Color Style`
 * `Show Dashboard Processed Images Chart`
-* `Show Dashboard Processing Metrics`
 * `Use URL Mode - Send Image URL`
 * `Auto-Approve New Uploads`
 * `Sync Alt Text to Attachment Title`

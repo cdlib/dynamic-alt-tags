@@ -159,7 +159,7 @@ if ( in_array( $notice, array( 'backfill_done', 'provider_test', 'history_cleare
 			<h2><?php esc_html_e( 'Dashboard', 'dynamic-alt-tags' ); ?></h2>
 			<p class="description"><?php esc_html_e( 'Welcome to the Dynamic Alt Tags plugin.', 'dynamic-alt-tags' ); ?></p>
 
-			<div class="ai-alt-metrics-grid">
+			<div class="ai-alt-metrics-grid ai-alt-tremor-metrics-grid">
 				<div class="ai-alt-metric-card">
 					<strong><?php esc_html_e( 'Images on site', 'dynamic-alt-tags' ); ?></strong>
 					<span id="ai-alt-metric-total-images"><?php echo esc_html( number_format_i18n( $total_images ) ); ?></span>

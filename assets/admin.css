@@ -292,15 +292,6 @@
 	color: var(--ai-alt-accent-dark);
 }
 
-.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metric-card {
-	border: 1px solid #2271b1;
-	border-radius: 6px;
-}
-
-.ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metric-card span {
-	color: #1e344f;
-}
-
 .ai-alt-settings-page #ai-alt-settings-tabs .ai-alt-metrics-table {
 	border-color: #b6c7dd;
 }
@@ -406,7 +397,7 @@
 	border: 1px solid var(--ai-alt-slate-200);
 	border-radius: 10px;
 	padding: 14px;
-	max-width: 1000px;
+	max-width: 1400px;
 }
 
 .ai-alt-queue-page.ai-alt-queue-view-help .ai-alt-queue-shell {
@@ -800,6 +791,14 @@
 	white-space: nowrap;
 }
 
+@media screen and (min-width: 1025px) and (max-width: 1300px) {
+	.ai-alt-queue-page .ai-alt-table[data-view="active"] td.ai-alt-col-actions .button {
+		padding-right: 8px;
+		padding-left: 8px;
+		font-size: 12px;
+	}
+}
+
 .ai-alt-queue-page .ai-alt-table[data-view="history"] {
 	table-layout: fixed;
 	overflow: visible;
@@ -938,6 +937,72 @@
 	font-size: 11px;
 	line-height: 1.4;
 	color: #50575e;
+}
+
+.ai-alt-queue-page .ai-alt-dashboard-metrics-grid {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+	max-width: 1100px;
+	margin: 20px 0 24px;
+}
+
+.ai-alt-settings-page .ai-alt-tremor-metrics-grid {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 12px;
+	margin: 20px 0 24px;
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card {
+	position: relative;
+	min-height: 104px;
+	padding: 20px 18px 16px;
+	overflow: hidden;
+	background: #ffffff;
+	border: 1px solid #d8dee8;
+	border-radius: 5px;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card::before {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	height: 4px;
+	background: #64748b;
+	content: "";
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card strong {
+	margin-bottom: 14px;
+	color: #475569;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card span {
+	color: #0f172a;
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1;
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card:nth-child(1)::before {
+	background: #2563eb;
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card:nth-child(2)::before {
+	background: #059669;
+}
+
+.ai-alt-wrap .ai-alt-tremor-metrics-grid .ai-alt-metric-card:nth-child(3)::before {
+	background: #d97706;
+}
+
+.ai-alt-queue-page #ai-alt-settings-panel-metrics > .ai-alt-metrics-table {
+	width: 100%;
+	max-width: 1100px;
 }
 
 .ai-alt-wrap .ai-alt-metrics-table {
@@ -1183,6 +1248,10 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 
+	.ai-alt-queue-page .ai-alt-dashboard-metrics-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
 	.ai-alt-wrap .ai-alt-processed-chart-header,
 	.ai-alt-wrap .ai-alt-processed-chart-meta {
 		flex-direction: column;
@@ -1406,6 +1475,10 @@
 	}
 
 	.ai-alt-wrap .ai-alt-metrics-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.ai-alt-queue-page .ai-alt-dashboard-metrics-grid {
 		grid-template-columns: 1fr;
 	}
 
