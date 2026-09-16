@@ -368,6 +368,9 @@ class WPAI_Alt_Text_Plugin {
 		$review_html .= '<p class="ai-alt-upload-retrieve-row">';
 		$review_html .= '<button type="button" class="button button-primary ai-alt-upload-retrieve" data-attachment-id="' . esc_attr( (string) $attachment_id ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'ai_alt_upload_action_ajax' ) ) . '">' . esc_html__( 'Generate Alt Text', 'dynamic-alt-tags' ) . '</button>';
 		$review_html .= '</p>';
+		$review_html .= '<div class="ai-alt-progress-wrap ai-alt-upload-progress-wrap" hidden>';
+		$review_html .= '<div class="ai-alt-progress-bar ai-alt-upload-progress-bar" role="progressbar" aria-label="' . esc_attr__( 'Alt text generation progress', 'dynamic-alt-tags' ) . '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>';
+		$review_html .= '</div>';
 		$review_html .= '<p class="description ai-alt-upload-action-result" aria-live="polite"></p>';
 		$review_html .= '</div>';
 

@@ -41,7 +41,8 @@
 	overflow-y: hidden;
 }
 
-.ai-alt-wrap .ai-alt-progress-wrap {
+.ai-alt-wrap .ai-alt-progress-wrap,
+.ai-alt-upload-retrieve-wrap .ai-alt-progress-wrap {
 	width: 100%;
 	max-width: 320px;
 	height: 10px;
@@ -61,18 +62,21 @@
 	margin: 6px 0 0;
 }
 
-.ai-alt-wrap .ai-alt-progress-bar {
+.ai-alt-wrap .ai-alt-progress-bar,
+.ai-alt-upload-retrieve-wrap .ai-alt-progress-bar {
 	height: 100%;
 	width: 0;
 	background: #2271b1;
 	transition: width 160ms ease;
 }
 
-.ai-alt-wrap .ai-alt-message-success {
+.ai-alt-wrap .ai-alt-message-success,
+.ai-alt-upload-retrieve-wrap .ai-alt-message-success {
 	color: #0a5a2d;
 }
 
-.ai-alt-wrap .ai-alt-message-error {
+.ai-alt-wrap .ai-alt-message-error,
+.ai-alt-upload-retrieve-wrap .ai-alt-message-error {
 	color: #b32d2e;
 }
 
@@ -89,6 +93,10 @@
 }
 
 .ai-alt-editor-generate-wrap .ai-alt-upload-action-result {
+	margin: 6px 0 0;
+}
+
+.ai-alt-upload-retrieve-wrap .ai-alt-upload-action-result {
 	margin: 6px 0 0;
 }
 

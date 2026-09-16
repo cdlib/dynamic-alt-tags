@@ -892,10 +892,27 @@
 			return;
 		}
 
+		var progressContainer = trigger.closest('.ai-alt-upload-retrieve-wrap');
+		var progressWrap = progressContainer ? progressContainer.querySelector('.ai-alt-upload-progress-wrap') : null;
+		var progressBar = progressContainer ? progressContainer.querySelector('.ai-alt-upload-progress-bar') : null;
+		var progress = 0;
+		var progressTimer = null;
+
+		if (progressWrap instanceof HTMLDivElement && progressBar instanceof HTMLDivElement) {
+			progressWrap.hidden = false;
+			progressBar.style.width = '0%';
+			progressBar.setAttribute('aria-valuenow', '0');
+			progressTimer = window.setInterval(function () {
+				progress = Math.min(progress + 8, 90);
+				progressBar.style.width = progress + '%';
+				progressBar.setAttribute('aria-valuenow', String(progress));
+			}, 160);
+		}
+
 		if (trigger instanceof HTMLInputElement || trigger instanceof HTMLButtonElement) {
 			trigger.disabled = true;
 		}
-		resultNode.textContent = '';
+		resultNode.textContent = i18n.rowProcessing || 'Processing image...';
 		resultNode.classList.remove('ai-alt-message-error');
 		resultNode.classList.remove('ai-alt-message-success');
 
@@ -918,6 +935,14 @@
 				return response.json();
 			})
 			.then(function (payload) {
+				if (progressTimer) {
+					window.clearInterval(progressTimer);
+				}
+				if (progressBar instanceof HTMLDivElement) {
+					progressBar.style.width = '100%';
+					progressBar.setAttribute('aria-valuenow', '100');
+				}
+
 				if (!payload || payload.success !== true) {
 					var errorMessage = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 					if (payload && payload.data && payload.data.message) {
@@ -928,8 +953,9 @@
 					return;
 				}
 
-				resultNode.textContent = '';
-				resultNode.classList.remove('ai-alt-message-success');
+				resultNode.textContent = (payload.data && payload.data.message) ? String(payload.data.message) : (i18n.rowSuccess || 'Image successfully processed');
+				resultNode.classList.add('ai-alt-message-success');
+				resultNode.classList.remove('ai-alt-message-error');
 
 				if (payload.data && typeof payload.data.alt_text !== 'undefined') {
 					var altText = String(payload.data.alt_text || '');
@@ -944,15 +970,33 @@
 				}
 			})
 			.catch(function () {
+				if (progressTimer) {
+					window.clearInterval(progressTimer);
+				}
+				if (progressBar instanceof HTMLDivElement) {
+					progressBar.style.width = '100%';
+					progressBar.setAttribute('aria-valuenow', '100');
+				}
 				if (resultNode.classList.contains('ai-alt-message-success')) {
 					return;
 				}
 				resultNode.textContent = i18n.uploadActionFailed || 'Unable to apply upload action. Please try again.';
 				resultNode.classList.add('ai-alt-message-error');
+				resultNode.classList.remove('ai-alt-message-success');
 			})
 			.finally(function () {
 				if (trigger instanceof HTMLInputElement || trigger instanceof HTMLButtonElement) {
 					trigger.disabled = false;
+				}
+				if (progressWrap instanceof HTMLDivElement && progressBar instanceof HTMLDivElement) {
+					window.setTimeout(function () {
+						progressWrap.hidden = true;
+						progressBar.style.width = '0%';
+						progressBar.setAttribute('aria-valuenow', '0');
+						resultNode.textContent = '';
+						resultNode.classList.remove('ai-alt-message-success');
+						resultNode.classList.remove('ai-alt-message-error');
+					}, 1800);
 				}
 			});
 	}

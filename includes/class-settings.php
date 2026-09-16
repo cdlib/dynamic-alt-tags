@@ -100,35 +100,7 @@ class WPAI_Alt_Text_Settings {
 		$current_week_key = $this->get_los_angeles_week_key();
 		$current_month_key = $this->get_los_angeles_month_key();
 		$current_year_key = $this->get_los_angeles_year_key();
-		$defaults = array(
-			'total_images_processed'    => 0,
-			'processed_attachment_ids'  => array(),
-			'success_count'             => 0,
-			'failure_count'             => 0,
-			'provider_call_count'       => 0,
-			'total_processing_time_ms'  => 0.0,
-			'total_provider_latency_ms' => 0.0,
-			'last_processing_time_ms'   => 0.0,
-			'last_provider_latency_ms'  => 0.0,
-			'last_processed_at'         => '',
-			'daily_metrics_date'        => $current_day_key,
-			'daily_images_processed'    => 0,
-			'daily_provider_call_count' => 0,
-			'daily_processed_attachment_ids' => array(),
-			'daily_history_attachment_ids' => array(),
-			'weekly_metrics_date'       => $current_week_key,
-			'weekly_images_processed'   => 0,
-			'weekly_processed_attachment_ids' => array(),
-			'weekly_history_attachment_ids' => array(),
-			'monthly_metrics_date'      => $current_month_key,
-			'monthly_images_processed'  => 0,
-			'monthly_processed_attachment_ids' => array(),
-			'monthly_history_attachment_ids' => array(),
-			'yearly_metrics_date'       => $current_year_key,
-			'yearly_images_processed'   => 0,
-			'yearly_processed_attachment_ids' => array(),
-			'yearly_history_attachment_ids' => array(),
-		);
+		$defaults = $this->get_default_metrics();
 
 		$raw = get_option( self::METRICS_OPTION_KEY, array() );
 		if ( ! is_array( $raw ) ) {
@@ -235,6 +207,43 @@ class WPAI_Alt_Text_Settings {
 	}
 
 	/**
+	 * Get the initial processing metrics state.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function get_default_metrics() {
+		return array(
+			'total_images_processed'    => 0,
+			'processed_attachment_ids'  => array(),
+			'success_count'             => 0,
+			'failure_count'             => 0,
+			'provider_call_count'       => 0,
+			'total_processing_time_ms'  => 0.0,
+			'total_provider_latency_ms' => 0.0,
+			'last_processing_time_ms'   => 0.0,
+			'last_provider_latency_ms'  => 0.0,
+			'last_processed_at'         => '',
+			'daily_metrics_date'        => $this->get_los_angeles_day_key(),
+			'daily_images_processed'    => 0,
+			'daily_provider_call_count' => 0,
+			'daily_processed_attachment_ids' => array(),
+			'daily_history_attachment_ids' => array(),
+			'weekly_metrics_date'       => $this->get_los_angeles_week_key(),
+			'weekly_images_processed'   => 0,
+			'weekly_processed_attachment_ids' => array(),
+			'weekly_history_attachment_ids' => array(),
+			'monthly_metrics_date'      => $this->get_los_angeles_month_key(),
+			'monthly_images_processed'  => 0,
+			'monthly_processed_attachment_ids' => array(),
+			'monthly_history_attachment_ids' => array(),
+			'yearly_metrics_date'       => $this->get_los_angeles_year_key(),
+			'yearly_images_processed'   => 0,
+			'yearly_processed_attachment_ids' => array(),
+			'yearly_history_attachment_ids' => array(),
+		);
+	}
+
+	/**
 	 * Persist processing metrics.
 	 *
 	 * @param array<string,mixed> $event Metric event values.
@@ -320,7 +329,7 @@ class WPAI_Alt_Text_Settings {
 	 * @return void
 	 */
 	public function reset_metrics() {
-		delete_option( self::METRICS_OPTION_KEY );
+		update_option( self::METRICS_OPTION_KEY, $this->get_default_metrics(), false );
 	}
 
 	/**
