@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 6.9.4
 Requires PHP: 7.4
-Stable tag: 1.0.9
+Stable tag: 1.1.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -171,6 +171,11 @@ Bulk actions:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.1.1 =
+* Refine the Dashboard metrics layout and keep detailed processing metrics visible.
+* Add attachment-processing progress feedback in the Media Library.
+* Make metric resets immediately persist a clean metrics state.
+
 = 1.0.9 =
 * Add Generate Alt Text controls for Classic Image Details and Gutenberg image blocks.
 * Persist Classic Image Details alt text changes to the Media Library.

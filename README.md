@@ -144,6 +144,13 @@ Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 
 ## Changelog
 
+### 1.1.1
+
+- Bump version to 1.1.1
+- Refine the Dashboard metrics layout and keep detailed processing metrics visible
+- Add attachment-processing progress feedback in the Media Library
+- Make metric resets immediately persist a clean metrics state
+
 ### 1.0.9
 
 - Bump version to 1.0.9
