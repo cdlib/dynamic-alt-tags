@@ -2,7 +2,7 @@
 Contributors: ericsatzman
 Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
-Tested up to: 6.9.4
+Tested up to: 7.1.2
 Requires PHP: 7.4
 Stable tag: 1.1.1
 License: MIT
