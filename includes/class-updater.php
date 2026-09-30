@@ -1,6 +1,6 @@
 <?php
 /**
- * Self-hosted plugin updater.
+ * GitHub-hosted plugin updater.
  *
  * @package WPAIAltText
  */
@@ -10,20 +10,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class WPAI_Alt_Text_Updater {
-
-	/**
-	 * Allowed update package host.
-	 *
-	 * @var string
-	 */
-	const UPDATE_PACKAGE_HOST = 'cdlib.org';
-
-	/**
-	 * Allowed update package path prefix.
-	 *
-	 * @var string
-	 */
-	const UPDATE_PACKAGE_PATH_PREFIX = '/services-groups/webprod/plugins/dynamic-alt-tags/';
 
 	/**
 	 * Canonical repository URL shown in WordPress plugin UI.
@@ -55,7 +41,7 @@ class WPAI_Alt_Text_Updater {
 	 *
 	 * @var string
 	 */
-	const UPDATE_HOSTNAME = 'cdlib.org';
+	const UPDATE_HOSTNAME = 'github.com';
 
 	/**
 	 * Constructor.
@@ -125,7 +111,7 @@ class WPAI_Alt_Text_Updater {
 		}
 
 		return (object) array(
-			'id'           => 'https://cdlib.org/services-groups/webprod/plugins/dynamic-alt-tags/',
+			'id'           => self::REPOSITORY_URL . '/',
 			'slug'         => 'dynamic-alt-tags',
 			'version'      => (string) $remote_info['version'],
 			'new_version'  => (string) $remote_info['version'],
@@ -208,13 +194,13 @@ class WPAI_Alt_Text_Updater {
 			'name'          => isset( $remote_info['name'] ) ? (string) $remote_info['name'] : 'Dynamic Alt Tags',
 			'slug'          => 'dynamic-alt-tags',
 			'version'       => (string) $remote_info['version'],
-			'author'        => '<a href="https://cdlib.org/services-groups/webprod/">California Digital Library</a>',
+			'author'        => '<a href="https://github.com/cdlib">California Digital Library</a>',
 			'homepage'      => self::REPOSITORY_URL,
 			'requires'      => isset( $remote_info['requires'] ) ? (string) $remote_info['requires'] : '',
 			'tested'        => isset( $remote_info['tested'] ) ? (string) $remote_info['tested'] : '',
 			'requires_php'  => isset( $remote_info['requires_php'] ) ? (string) $remote_info['requires_php'] : '',
 			'last_updated'  => isset( $remote_info['last_updated'] ) ? (string) $remote_info['last_updated'] : '',
-			'download_link' => isset( $remote_info['download_url'] ) ? (string) $remote_info['download_url'] : WPAI_ALT_TEXT_UPDATE_PACKAGE_URL,
+			'download_link' => (string) $remote_info['download_url'],
 			'icons'         => $this->get_icon_urls(),
 			'sections'      => isset( $remote_info['sections'] ) && is_array( $remote_info['sections'] ) ? $remote_info['sections'] : array(),
 		);
@@ -236,6 +222,9 @@ class WPAI_Alt_Text_Updater {
 		if ( is_wp_error( $response ) ) {
 			return array();
 		}
+		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			return array();
+		}
 
 		$body = wp_remote_retrieve_body( $response );
 		if ( ! is_string( $body ) || '' === trim( $body ) ) {
@@ -247,14 +236,15 @@ class WPAI_Alt_Text_Updater {
 			return array();
 		}
 
-		$download_url = isset( $decoded['download_url'] ) ? esc_url_raw( (string) $decoded['download_url'] ) : WPAI_ALT_TEXT_UPDATE_PACKAGE_URL;
-		if ( ! $this->is_allowed_update_url( $download_url ) ) {
-			$download_url = WPAI_ALT_TEXT_UPDATE_PACKAGE_URL;
+		$version      = isset( $decoded['version'] ) ? sanitize_text_field( (string) $decoded['version'] ) : '';
+		$download_url = isset( $decoded['download_url'] ) ? esc_url_raw( (string) $decoded['download_url'] ) : '';
+		if ( ! $this->is_allowed_update_url( $download_url, $version ) ) {
+			return array();
 		}
 
 		$remote_info = array(
 			'name'          => isset( $decoded['name'] ) ? sanitize_text_field( (string) $decoded['name'] ) : 'Dynamic Alt Tags',
-			'version'       => isset( $decoded['version'] ) ? sanitize_text_field( (string) $decoded['version'] ) : '',
+			'version'       => $version,
 			'download_url'  => $download_url,
 			'homepage'      => self::REPOSITORY_URL,
 			'requires'      => isset( $decoded['requires'] ) ? sanitize_text_field( (string) $decoded['requires'] ) : '',
@@ -270,29 +260,18 @@ class WPAI_Alt_Text_Updater {
 	/**
 	 * Whether the remote update package URL matches the expected host and path.
 	 *
-	 * @param string $url Candidate update URL.
+	 * @param string $url     Candidate update URL.
+	 * @param string $version Candidate version.
 	 * @return bool
 	 */
-	private function is_allowed_update_url( $url ) {
+	private function is_allowed_update_url( $url, $version ) {
 		$url = esc_url_raw( (string) $url );
-		if ( '' === $url ) {
+		if ( '' === $url || ! preg_match( '/^\d+\.\d+\.\d+$/', (string) $version ) ) {
 			return false;
 		}
 
-		$parts = wp_parse_url( $url );
-		if ( ! is_array( $parts ) ) {
-			return false;
-		}
-
-		$scheme = isset( $parts['scheme'] ) ? strtolower( (string) $parts['scheme'] ) : '';
-		$host   = isset( $parts['host'] ) ? strtolower( (string) $parts['host'] ) : '';
-		$path   = isset( $parts['path'] ) ? (string) $parts['path'] : '';
-
-		if ( 'https' !== $scheme || self::UPDATE_PACKAGE_HOST !== $host ) {
-			return false;
-		}
-
-		return 0 === strpos( $path, self::UPDATE_PACKAGE_PATH_PREFIX );
+		$expected_url = self::REPOSITORY_URL . '/releases/download/v' . $version . '/dynamic-alt-tags-' . $version . '.zip';
+		return $expected_url === $url;
 	}
 
 	/**

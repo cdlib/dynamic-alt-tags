@@ -110,7 +110,7 @@ Developer tooling is Composer-based and currently includes PHPCS, WPCS, and PHP 
 
 ## Release Build
 
-Release packaging and hosted-updater tooling are intentionally kept outside this public plugin repository.
+Release packaging and publishing tooling are intentionally kept outside this public plugin repository. The published update feed is `downloads/info.json`, and plugin ZIPs are GitHub Release assets.
 
 Run the release script from the local Dynamic Alt Tags config repo instead:
 
@@ -119,12 +119,16 @@ cd /Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/dynamic-alt-tags-config
 ./build-release.sh
 ```
 
-The script:
+The script requires GitHub CLI authentication and:
 
 - reads the version from the local plugin repo
 - builds `dynamic-alt-tags-<version>.zip` from the local plugin source
 - writes the zip to `/Users/local-esatzman/Desktop/Sites/dynamic-alt-tags/plugin-updates/`
 - copies the current `info.json` from the config repo into that same `plugin-updates` directory
+- uploads the ZIP as a versioned GitHub Release asset
+- commits and pushes `downloads/info.json` only after the ZIP is available
+
+Use `./build-release.sh --build-only` to package locally without publishing.
 
 ## Contributing
 
@@ -143,6 +147,11 @@ Please report security issues privately. See [`SECURITY.md`](SECURITY.md).
 - [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
 
 ## Changelog
+
+### 1.1.2
+
+- Move plugin update metadata and release ZIPs to GitHub
+- Publish release assets and metadata through the private build script
 
 ### 1.1.1
 

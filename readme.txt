@@ -4,7 +4,7 @@ Tags: accessibility, images, alt text, ai
 Requires at least: 6.2
 Tested up to: 7.1.2
 Requires PHP: 7.4
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 License: MIT
 License URI: https://opensource.org/licenses/MIT
 
@@ -161,7 +161,7 @@ Bulk actions:
 * Disable URL mode (use direct upload mode).
 
 ==== Plugin Updates ====
-* The plugin supports self-hosted update checks via the hosted `info.json` endpoint.
+* The plugin checks `downloads/info.json` on GitHub and installs versioned GitHub Release assets.
 * `Dashboard > Updates` can display a native custom plugin icon when an update is available.
 
 === Best Practices ===
@@ -171,6 +171,10 @@ Bulk actions:
 * Grant queue access only to users who manage media metadata.
 
 == Changelog ==
+= 1.1.2 =
+* Move plugin update metadata and release ZIPs to GitHub.
+* Publish release assets and metadata through the private build script.
+
 = 1.1.1 =
 * Refine the Dashboard metrics layout and keep detailed processing metrics visible.
 * Add attachment-processing progress feedback in the Media Library.
