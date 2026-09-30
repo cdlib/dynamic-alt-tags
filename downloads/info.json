@@ -1,0 +1,14 @@
+{
+  "name": "Dynamic Alt Tags",
+  "slug": "dynamic-alt-tags",
+  "version": "1.1.2",
+  "requires": "6.2",
+  "tested": "7.1.2",
+  "requires_php": "7.4",
+  "download_url": "https://github.com/cdlib/dynamic-alt-tags/releases/download/v1.1.2/dynamic-alt-tags-1.1.2.zip",
+  "last_updated": "2026-09-30",
+  "sections": {
+    "description": "Generate and manage AI-suggested alt text for WordPress images.",
+    "changelog": "<h4>1.1.2</h4><ul><li>Move update metadata and release ZIPs to GitHub.</li><li>Publish releases directly from the private build script.</li></ul><h4>1.1.1</h4><ul><li>Refine the Dashboard metrics layout and keep detailed processing metrics visible.</li><li>Add attachment-processing progress feedback in the Media Library.</li><li>Make metric resets immediately persist a clean metrics state.</li></ul><h4>1.0.9</h4><ul><li>Add Generate Alt Text controls for Classic Image Details and Gutenberg image blocks.</li><li>Persist Classic Image Details alt text changes to the Media Library.</li><li>Support generating alt text for Gutenberg image blocks that use external image URLs.</li></ul><h4>1.0.8</h4><ul><li>Add separate Dashboard settings to show or hide the processed images chart and detailed processing metrics panel.</li><li>Keep those Dashboard panels off by default while leaving the Dashboard summary cards visible.</li></ul><h4>1.0.7</h4><ul><li>Add a Direct Upload Image Size setting with Large and Medium options for Cloudflare testing.</li><li>Add processed-images history charts to the Dashboard and Metrics pages.</li><li>Add selectable chart color styles and expanded processed totals for day, week, month, and year views.</li></ul><h4>1.0.6</h4><ul><li>Remove the Settings Tools page Process Queue Now action in favor of queue-page processing workflows.</li><li>Add optional background processing settings with configurable WP-Cron frequency and per-run image limits, off by default.</li><li>Add an optional Sync Alt Text to Attachment Caption setting, off by default.</li><li>Improve media-library Attachment Details updates so generated alt text is reflected more reliably in the visible fields.</li></ul><h4>1.0.5</h4><ul><li>Bump version to 1.0.5</li></ul><h4>1.0.4</h4><ul><li>Bump version to 1.0.4</li></ul><h4>1.0.3</h4><ul><li>Bump version to 1.0.3</li></ul><h4>1.0.2</h4><ul><li>Bump version to 1.0.2</li></ul><h4>1.0.1</h4><ul><li>Initial release</li></ul>"
+  }
+}
