@@ -34,7 +34,7 @@ The plugin is designed for editorial teams that need fast generation plus contro
 * Selectable chart color styles and processed-history charts in Dashboard and Metrics.
 * Sync options for attachment title, caption, and description.
 * Queue dashboard and settings metrics, including day, week, month, and year processed totals.
-* Self-hosted plugin update support with native update-page icon metadata.
+* GitHub-hosted plugin updates with native update-page icon metadata.
 * Mobile/tablet responsive queue layout improvements.
 * Role-based access control for queue visibility and actions.
 
